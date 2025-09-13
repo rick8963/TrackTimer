@@ -4,7 +4,7 @@
 
 using namespace std;
 
-class Timer
+class LapTimer
 {
 
 private:

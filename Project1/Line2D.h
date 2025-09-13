@@ -13,8 +13,8 @@ public:
 	void setPoint1(const Point2D& p);
 	void setPoint2(const Point2D& p);
 
-	float getLength() const; // warning, unit is not meters.
-	float distanceToLine(const Point2D& p) const; // warning, unit is not meters.
+	float getLength() const; // in meters.
+	float distanceToLine(const Point2D& p) const; // in meters.
 	float crossValue(const Point2D& p) const;
 	bool isPointInInterval(const Point2D& p) const;
 

@@ -6,7 +6,10 @@ using namespace std;
 
 class Track{
 public:
-
+	/*void startLap();
+	void finishLap();
+	int getTotalLaps() const;
+	Lap getLap(int index) const;*/
 	Track(vector<Line2D> scts);
 	unsigned int getSectorNumber() const;
 	unsigned int getCurrentSectorNumber() const;
@@ -27,5 +30,9 @@ private:
 	vector<Line2D> sectors;
 	vector<bool> passState; // a bool array to record sectors has been passed
 	bool passSector(unsigned int i);
+	/*std::vector<Lap> laps;
+	Point2D lastPos;
+	bool lapStarted = false;*/
+	
 	void nextLap();
 };

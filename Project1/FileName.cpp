@@ -2,6 +2,7 @@
 #include<vector>
 #include<Windows.h>
 #include"Track.h"
+#include"GPSPoint.h"
 
 using namespace std;
 
@@ -73,5 +74,13 @@ int main()
 		//Sleep(500);
 	}
 
+	 //22.857318, 120.289120
+	 //22.856466, 120.289463
+
+	//GPSPoint loc(2251.4390, 12017.3472);
+	//cout << loc.getX() << " " << loc.getY() << endl;
+	//GPSPoint loca(2251.3879, 12017.3677);
+	//cout << loca.getX() << " " << loca.getY() << endl;
+	//cout << "distance " << loc.distanceTo(loca) << " meters" << endl;
 	return 0;
 }
