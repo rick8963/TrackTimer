@@ -5,7 +5,7 @@
 class Sector
 {
 public:
-	Sector(Line2D start, Line2D end);
+	Sector(unsigned int startIndex, unsigned int endIndex);
 
 	void setSectorTime(float time);
 	float getSectorTime() const;
@@ -15,13 +15,14 @@ public:
 	void pass();
 	bool isEntered() const;
 	bool isPassed()const ;
-	bool checkIfPassed(const Point2D& currentPos, const Point2D& lastPos);
+	unsigned int getStartNodeIndex() const;
+	unsigned int getEndNodeIndex() const;
 
 private:
 	float sectorTime;
 	bool entered;
 	bool passed;
-	Line2D startPos;
-	Line2D endPos;
+	unsigned int startNodeIndex;
+	unsigned int endNodeIndex;
 };
 
