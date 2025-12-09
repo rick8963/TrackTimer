@@ -2,14 +2,15 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+constexpr double DEG_TO_RAD = M_PI / 180.0;
+
 Line2D::Line2D(const Point2D& p1, const Point2D& p2)
 	: point1(p1), point2(p2), length(p1.distanceTo(p2)) {}
 
 Line2D::Line2D(const Point2D& p, float direction, float width) {
 	const float halfWidth = width / 2.0f;
-	const float d2r = M_PI / 180;
-	point1 = Point2D(p.getX() - halfWidth * std::cos(direction * d2r), p.getY() - halfWidth * std::sin(direction * d2r));
-	point2 = Point2D(p.getX() + halfWidth * std::cos(direction * d2r), p.getY() + halfWidth * std::sin(direction * d2r));
+	point1 = Point2D(p.getX() - halfWidth * std::cos(direction * DEG_TO_RAD), p.getY() - halfWidth * std::sin(direction * DEG_TO_RAD));
+	point2 = Point2D(p.getX() + halfWidth * std::cos(direction * DEG_TO_RAD), p.getY() + halfWidth * std::sin(direction * DEG_TO_RAD));
 	length = point1.distanceTo(point2);
 }
 

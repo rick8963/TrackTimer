@@ -2,6 +2,7 @@
 #include<vector>
 #include<Windows.h>
 #include"Track.h"
+#include"GPSPoint.h"
 
 using namespace std;
 
@@ -55,12 +56,12 @@ int main()
 		Line2D curSector = SQR.getNextCheckpoint();
 		vector<bool> passState = SQR.getPassState();
 
-		cout << "current pos (" << currentPos.getX() << ", " << currentPos.getY() << ")\tat sector " << SQR.getCurrentSectorNumber() + 1 << endl
+		cout << "current pos (" << currentPos.getX() << ", " << currentPos.getY() << ")\tat sector " << SQR.getCurrentsectorCount() + 1 << endl
 			<< curSector.distanceToLine(currentPos) << " meters to next checkpoint (" << curSector.getPoint1().getX() << ", " << curSector.getPoint1().getY() << "), "
 			<< "(" << curSector.getPoint2().getX() << ", " << curSector.getPoint2().getY() << ")" << endl;
 		
 		cout << "sectors state : \n";
-		for (int i = 0; i < SQR.getSectorNumber(); i++)
+		for (int i = 0; i < SQR.getsectorCount(); i++)
 		{
 			cout << "Sector " << i + 1 << "\t";
 		}
@@ -73,5 +74,13 @@ int main()
 		//Sleep(500);
 	}
 
+	 //22.857318, 120.289120
+	 //22.856466, 120.289463
+
+	//GPSPoint loc(2251.4390, 12017.3472);
+	//cout << loc.getX() << " " << loc.getY() << endl;
+	//GPSPoint loca(2251.3879, 12017.3677);
+	//cout << loca.getX() << " " << loca.getY() << endl;
+	//cout << "distance " << loc.distanceTo(loca) << " meters" << endl;
 	return 0;
 }

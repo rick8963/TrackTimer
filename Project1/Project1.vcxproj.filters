@@ -24,12 +24,21 @@
     <ClInclude Include="Track.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="Timer.h">
+    <ClInclude Include="LapTimer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="GPSPoint.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="Sector.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="Lap.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Timer.cpp">
+    <ClCompile Include="LapTimer.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
     <ClCompile Include="Line2D.cpp">
@@ -43,6 +52,15 @@
     </ClCompile>
     <ClCompile Include="FileName.cpp">
       <Filter>資源檔</Filter>
+    </ClCompile>
+    <ClCompile Include="GPSPoint.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="Sector.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="Lap.cpp">
+      <Filter>來源檔案</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
