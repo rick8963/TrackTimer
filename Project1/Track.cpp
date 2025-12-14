@@ -5,7 +5,12 @@ Track::Track()
 	currentSector(0),
 	currentPos(Point2D(0, 0)),
 	lastPos(Point2D(0, 0)),
-	lastLapValid(true)
+	lastLapValid(true),
+	sessionStartTime(0),
+	sessionEndTime(0),
+	sessionBestTime(0),
+	latestLapTime(0),
+	currentLapTime(0)
 {}
 
 Track::Track(vector<Line2D> nds, bool isCircuit)
@@ -16,7 +21,12 @@ Track::Track(vector<Line2D> nds, bool isCircuit)
 	currentSector(sectorCount - 1), // start at last sector
 	currentPos(Point2D(0, 0)),
 	lastPos(Point2D(0, 0)),
-	lastLapValid(true)
+	lastLapValid(true),
+	sessionStartTime(0),
+	sessionEndTime(0),
+	sessionBestTime(0),
+	latestLapTime(0),
+	currentLapTime(0)
 {
 
 	for (int i = 0; i < sectorCount - 1; i++)

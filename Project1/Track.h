@@ -1,15 +1,25 @@
 #pragma once
+#include "Lap.h"
 #include "Sector.h"
-#include <vector>
 
 using namespace std;
 
 class Track{
+	/*
+	* Concept of Track:
+	* A track is made up of several sectors.
+	* Each sector is defined by a Line2D node.
+	* The sectors are connected in a loop (circuit) or a line (non-circuit).
+	* 
+	* Timer should be started when the first sector is passed.
+	* When all sectors are passed, a lap is completed.
+	* The track should be able to tell which sector is next based on current position.(???)
+	* 
+	* Laps should be recorded with time, and sector times should also be recorded.
+	* Laps is a vector of Lap objects, each Lap contains sector times and total lap time.
+	* 
+	*/
 public:
-	/*void startLap();
-	void finishLap();
-	int getTotalLaps() const;h
-	Lap getLap(int index) const;*/
 	Track(vector<Line2D> nds, bool isCircuit = true);
 	unsigned int getsectorCount() const;
 	unsigned int getCurrentsectorCount() const;
@@ -31,9 +41,13 @@ private:
 	vector<Sector> sectors;
 	vector<bool> passState; // a bool array to record sectors has been passed
 	bool passSector(unsigned int i);
-	/*std::vector<Lap> laps;
-	Point2D lastPos;
-	bool lapStarted = false;*/
-	
 	void nextLap();
+
+	std::vector<Lap> laps;
+	clock_t sessionStartTime;
+	clock_t sessionEndTime;
+	clock_t bestLapTime;
+	clock_t latestLapTime;
+	clock_t currentLapTime;
+	
 };
