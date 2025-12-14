@@ -6,10 +6,6 @@ using namespace std;
 
 class Track{
 public:
-	/*void startLap();
-	void finishLap();
-	int getTotalLaps() const;h
-	Lap getLap(int index) const;*/
 	Track(vector<Line2D> nds, bool isCircuit = true);
 	unsigned int getsectorCount() const;
 	unsigned int getCurrentsectorCount() const;

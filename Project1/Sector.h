@@ -7,9 +7,6 @@ class Sector
 public:
 	Sector(unsigned int startIndex, unsigned int endIndex);
 
-	void setSectorTime(float time);
-	float getSectorTime() const;
-
 	void reset();
 	void enter();
 	void pass();
@@ -19,7 +16,6 @@ public:
 	unsigned int getEndNodeIndex() const;
 
 private:
-	float sectorTime;
 	bool entered;
 	bool passed;
 	unsigned int startNodeIndex;
