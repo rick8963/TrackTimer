@@ -28,6 +28,8 @@ public:
 	Line2D getNextCheckpoint() const;
 	Point2D getCurrentPos() const;
 	void updatePos(Point2D& pos);
+	// this may not be safe
+	std::vector<Lap> getLaps() const;
 	
 private:
 	Track();
@@ -43,6 +45,7 @@ private:
 	bool passSector(unsigned int i);
 	void nextLap();
 
+	Lap* currentLap;
 	std::vector<Lap> laps;
 	clock_t sessionStartTime;
 	clock_t sessionEndTime;

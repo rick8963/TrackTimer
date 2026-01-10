@@ -73,6 +73,21 @@ int main()
 		cout << endl << endl;
 		//Sleep(500);
 	}
+	cout << SQR.getLaps().size() << " laps in total" << endl;
+	int i = 1;
+	for (auto& lap : SQR.getLaps())
+	{
+		cout << "Lap " << i++ << " : " << lap.getLapTime() << " ticks" << endl;
+		for (int j = 0; j < SQR.getsectorCount() ; j++)
+		{
+			auto sectorTime = lap.getSectorTime(j);
+			if (sectorTime.has_value())
+				cout << "\tSector " << j + 1 << " : " << sectorTime.value() << " ticks" << endl;
+			else
+				cout << "\tSector " << j + 1 << " : " << "N/A" << endl;
+		}
+			
+	}
 
 	 //22.857318, 120.289120
 	 //22.856466, 120.289463
