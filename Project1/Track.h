@@ -21,8 +21,8 @@ class Track{
 	*/
 public:
 	Track(vector<Line2D> nds, bool isCircuit = true);
-	unsigned int getsectorCount() const;
-	unsigned int getCurrentsectorCount() const;
+	unsigned int getSectorCount() const;
+	unsigned int getCurrentSectorCount() const;
 	vector<bool> getPassState() const;
 	vector<Sector> getSectors() const;
 	Line2D getNextCheckpoint() const;

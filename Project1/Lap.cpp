@@ -34,7 +34,8 @@ bool Lap::setSectorTime(unsigned int index, clock_t t)
 	for (unsigned int i = 0; i < index; ++i)
 		cumulativeBefore += sectorTimes[i].value_or(0);
 
-	clock_t duration = (t - lapStartTime) - cumulativeBefore;
+	clock_t lastSectorEndTime = lapStartTime + cumulativeBefore;
+	clock_t duration = t - lastSectorEndTime;
 	if (duration < 0) return false; // guard
 
 	sectorTimes[index] = duration;
@@ -60,6 +61,6 @@ clock_t Lap::getLapTime() const
 
 std::optional<clock_t> Lap::getSectorTime(unsigned int index) const
 {
-	if (index >= sectorCount) std::nullopt;
+	if (index >= sectorCount) return std::nullopt;
 	return sectorTimes[index];
 }

@@ -40,7 +40,8 @@ Track::Track(vector<Line2D> nds, bool isCircuit)
 	}
 
 bool Track::passSector(unsigned int i)
-{	
+{
+	if (i >= nodes.size()) return false;
 	Line2D* sector = &nodes.at(i);
 	if (!sector->isPointInInterval(lastPos) && !sector->isPointInInterval(currentPos)) return false; // not in detect interval
 	if (sector->crossValue(lastPos) * sector->crossValue(currentPos) > 0) return false; // not pass a sector
@@ -63,12 +64,12 @@ bool Track::passSector(unsigned int i)
 	return true;
 }
 
-unsigned int Track::getsectorCount() const
+unsigned int Track::getSectorCount() const
 {
 	return sectorCount;
 }
 
-unsigned int Track::getCurrentsectorCount() const
+unsigned int Track::getCurrentSectorCount() const
 {
 	return currentSector;
 }
@@ -76,8 +77,8 @@ unsigned int Track::getCurrentsectorCount() const
 // lap compeleted
 void Track::nextLap()
 {
-	//std::fill(passState.begin(), passState.end(), false);
 	for (auto& sector : sectors) sector.reset();
+	std::fill(passState.begin(), passState.end(), false);
 	laps.push_back(Lap(sectorCount, clock()));
 	currentLap = &laps.back();
 }
