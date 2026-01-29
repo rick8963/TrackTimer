@@ -24,9 +24,6 @@
     <ClInclude Include="Track.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="LapTimer.h">
-      <Filter>標頭檔</Filter>
-    </ClInclude>
     <ClInclude Include="GPSPoint.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
@@ -38,9 +35,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LapTimer.cpp">
-      <Filter>來源檔案</Filter>
-    </ClCompile>
     <ClCompile Include="Line2D.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>

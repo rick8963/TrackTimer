@@ -1,69 +1,102 @@
 #include "Track.h"
-#include<iostream>
+
 Track::Track()
 	: sectorCount(0),
 	currentSector(0),
 	currentPos(Point2D(0, 0)),
 	lastPos(Point2D(0, 0)),
-	lastLapValid(true)
+	lastLapValid(true),
+	sessionStartTime(clock()),
+	sessionEndTime(0),
+	bestLapTime(0),
+	latestLapTime(0)
 {}
 
 Track::Track(vector<Line2D> nds, bool isCircuit)
 	:
 	sectorCount(isCircuit ? nds.size() : nds.size() - 1),
 	nodes(std::move(nds)),
-	passState(sectorCount, false),
 	currentSector(sectorCount - 1), // start at last sector
 	currentPos(Point2D(0, 0)),
 	lastPos(Point2D(0, 0)),
-	lastLapValid(true)
+	lastLapValid(true),
+	sessionStartTime(clock()),
+	sessionEndTime(0),
+	bestLapTime(0),
+	latestLapTime(0)
 {
-
 	for (int i = 0; i < sectorCount - 1; i++)
 	{
 		sectors.push_back(Sector(i, i + 1));
 	}
 	// insert last sector
 	if(isCircuit) sectors.push_back(Sector(sectorCount - 1, 0));
-
 }
 
 bool Track::passSector(unsigned int i)
 {
-	
+	if (i >= nodes.size()) return false;
 	Line2D* sector = &nodes.at(i);
-	//std::cout << "check pass " << i  << " "
-		//<< sector->isPointInInterval(lastPos) << " " << sector->isPointInInterval(currentPos) << std::endl;
-	if (!sector->isPointInInterval(lastPos) && !sector->isPointInInterval(currentPos)) return false; // not in detect interval
-	//std::cout << sector->crossValue(lastPos) * sector->crossValue(currentPos) << std::endl;
-	if (sector->crossValue(lastPos) * sector->crossValue(currentPos) > 0) return false; // not pass a sector
+	if (!sector->isPointInInterval(lastPos) && !sector->isPointInInterval(currentPos)) return false;
+	if (sector->crossValue(lastPos) * sector->crossValue(currentPos) > 0) return false;
+	if (!currentLapIndex.has_value()) return true;
+
+	Lap& lap = laps[currentLapIndex.value()];
+	lap.setSectorTime(currentSector, clock());
+
 	return true;
 }
 
-unsigned int Track::getsectorCount() const
+unsigned int Track::getSectorCount() const
 {
 	return sectorCount;
 }
 
-unsigned int Track::getCurrentsectorCount() const
+unsigned int Track::getCurrentSectorCount() const
 {
 	return currentSector;
 }
 
-// lap compeleted
+bool Track::isAllSectorsPassed() const
+{
+	for (const auto& sector : sectors)
+	{
+		if (!sector.isPassed()) return false;
+	}
+	return true;
+}
+
+// lap completed
 void Track::nextLap()
 {
-	//std::fill(passState.begin(), passState.end(), false);
+	// Update lap statistics if there was a previous lap
+	if (currentLapIndex.has_value())
+	{
+		Lap& prevLap = laps[currentLapIndex.value()];
+		clock_t lapTime = prevLap.getLapTime();
+
+		// Only update statistics if lap is completed (lapTime > 0)
+		if (lapTime > 0)
+		{
+			latestLapTime = lapTime;
+
+			// Update best lap time (only for valid and completed laps)
+			if (lastLapValid && (bestLapTime == 0 || lapTime < bestLapTime))
+			{
+				bestLapTime = lapTime;
+			}
+		}
+	}
+
+	// Reset all sectors
 	for (auto& sector : sectors) sector.reset();
-	currentSector = 0;
+
+	// Create new lap
+	laps.push_back(Lap(sectorCount, clock()));
+	currentLapIndex = laps.size() - 1;
 }
 
-vector<bool> Track::getPassState() const
-{
-	return passState;
-}
-
-vector<Sector> Track::getSectors() const
+const vector<Sector>& Track::getSectors() const
 {
 	return sectors;
 }
@@ -86,15 +119,58 @@ void Track::updatePos(Point2D& pos)
 	// pass start line
 	if (passSector(0))
 	{
-		lastLapValid = true;
-		for (auto state : passState) if (!state) lastLapValid = false; // check last lap is valid
+		// Record the last sector time BEFORE creating new lap
+		if (currentLapIndex.has_value() && currentSector == sectorCount - 1)
+		{
+			Lap& lap = laps[currentLapIndex.value()];
+			lap.setSectorTime(sectorCount - 1, clock());
+			
+			// Mark the last sector as passed before validation
+			if (currentSector < sectors.size())
+			{
+				sectors[currentSector].pass();
+			}
+		}
+
+		// Check if last lap was valid using Sector states
+		lastLapValid = isAllSectorsPassed();
 		nextLap();
+		currentSector = 0;
 		return;
 	}
-	if(currentSector == sectorCount - 1) return;
+	if (currentSector == sectorCount - 1) return;
 	if (passSector(currentSector + 1))
 	{
-		passState.at(currentSector) = true;
+		// Mark current sector as passed
+		if (currentSector < sectors.size())
+		{
+			sectors[currentSector].pass();
+		}
 		currentSector++;
 	}
+}
+
+const std::vector<Lap>& Track::getLaps() const
+{
+	return laps;
+}
+
+clock_t Track::getBestLapTime() const
+{
+	return bestLapTime;
+}
+
+clock_t Track::getLatestLapTime() const
+{
+	return latestLapTime;
+}
+
+clock_t Track::getSessionStartTime() const
+{
+	return sessionStartTime;
+}
+
+clock_t Track::getSessionEndTime() const
+{
+	return sessionEndTime;
 }

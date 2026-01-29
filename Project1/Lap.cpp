@@ -1,30 +1,66 @@
 #include "Lap.h"
 
-#include<cmath>
+Lap::Lap(int numSectors)
+	: lapStartTime(0),
+	lapEndTime(0),
+	sectorCount(numSectors),
+	sectorTimes(numSectors) // initialize as nullopt
+{}
 
-Lap::Lap(int numSectors, Line2D start, Line2D end)
+Lap::Lap(int numSectors, clock_t startTime)
+	: lapStartTime(startTime),
+	lapEndTime(0),
+	sectorCount(numSectors),
+	sectorTimes(numSectors) // initialize as nullopt
+{}
+
+bool Lap::start(clock_t t)
 {
+	if (lapStartTime != 0) return false;
+	lapStartTime = t;
+	return true;
 }
 
-void Lap::setLapTime(double time)
+bool Lap::setSectorTime(unsigned int index, clock_t t)
 {
+	if (index >= sectorCount) return false;
+	if (lapStartTime == 0) return false; // lap not started
+
+	// Ensure all previous sectors have values
+	/*for (unsigned int i = 0; i < index; ++i)
+		if (!sectorTimes[i].has_value()) return false;*/
+
+	clock_t cumulativeBefore = 0;
+	for (unsigned int i = 0; i < index; ++i)
+		cumulativeBefore += sectorTimes[i].value_or(0);
+
+	clock_t lastSectorEndTime = lapStartTime + cumulativeBefore;
+	clock_t duration = t - lastSectorEndTime;
+	if (duration < 0) return false; // guard
+
+	sectorTimes[index] = duration;
+
+	if (index == sectorCount - 1)
+		lapEndTime = t;
+
+	return true;
 }
 
-double Lap::getLapTime() const
+bool Lap::stop(clock_t t)
 {
-	return 0.0;
+	if (lapStartTime == 0 || lapEndTime != 0) return false;
+	lapEndTime = t;
+	return true;
 }
 
-void Lap::setSectorTime(int index, double time)
+clock_t Lap::getLapTime() const
 {
+	if (lapStartTime == 0 || lapEndTime <= lapStartTime) return 0;
+	return lapEndTime - lapStartTime;
 }
 
-double Lap::getSectorTime(int index) const
+std::optional<clock_t> Lap::getSectorTime(unsigned int index) const
 {
-	return 0.0;
-}
-
-bool Lap::checkLapCompleted(const Point2D& currentPos, const Point2D& lastPos) const
-{
-	return false;
+	if (index >= sectorCount) return std::nullopt;
+	return sectorTimes[index];
 }
