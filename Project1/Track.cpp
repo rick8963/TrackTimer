@@ -83,12 +83,12 @@ void Track::nextLap()
 	currentLap = &laps.back();
 }
 
-vector<bool> Track::getPassState() const
+vector<bool>& const Track::getPassState()
 {
 	return passState;
 }
 
-vector<Sector> Track::getSectors() const
+vector<Sector>& const Track::getSectors()
 {
 	return sectors;
 }
@@ -130,7 +130,7 @@ void Track::updatePos(Point2D& pos)
 	}
 }
 
-std::vector<Lap> Track::getLaps() const
+std::vector<Lap>& const Track::getLaps()
 {
 	return laps;
 }
