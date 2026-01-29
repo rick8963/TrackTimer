@@ -42,7 +42,7 @@ bool Track::passSector(unsigned int i)
 	if (!currentLapIndex.has_value()) return true;
 
 	Lap& lap = laps[currentLapIndex.value()];
-	lap.setSectorTime(currentSector, clock()); // this function return value is bool	
+	lap.setSectorTime(currentSector, clock());
 
 	return true;
 }
@@ -124,6 +124,12 @@ void Track::updatePos(Point2D& pos)
 		{
 			Lap& lap = laps[currentLapIndex.value()];
 			lap.setSectorTime(sectorCount - 1, clock());
+			
+			// Mark the last sector as passed before validation
+			if (currentSector < sectors.size())
+			{
+				sectors[currentSector].pass();
+			}
 		}
 
 		// Check if last lap was valid using Sector states
