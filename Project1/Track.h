@@ -23,13 +23,15 @@ public:
 	Track(vector<Line2D> nds, bool isCircuit = true);
 	unsigned int getSectorCount() const;
 	unsigned int getCurrentSectorCount() const;
-	vector<bool>& getPassState();
-	vector<Sector>& getSectors();
+	const vector<Sector>& getSectors() const;
 	Line2D getNextCheckpoint() const;
 	Point2D getCurrentPos() const;
 	void updatePos(Point2D& pos);
-	// this may not be safe
-	std::vector<Lap>& getLaps();
+	const std::vector<Lap>& getLaps() const;
+	clock_t getBestLapTime() const;
+	clock_t getLatestLapTime() const;
+	clock_t getSessionStartTime() const;
+	clock_t getSessionEndTime() const;
 	
 private:
 	Track();
@@ -41,9 +43,10 @@ private:
 	Point2D lastPos;
 	vector<Line2D> nodes;
 	vector<Sector> sectors;
-	vector<bool> passState; // a bool array to record sectors has been passed
+	// Removed passState - now using Sector::isPassed()
 	bool passSector(unsigned int i);
 	void nextLap();
+	bool isAllSectorsPassed() const;
 
 	std::optional<size_t> currentLapIndex;
 	std::vector<Lap> laps;
@@ -51,6 +54,5 @@ private:
 	clock_t sessionEndTime;
 	clock_t bestLapTime;
 	clock_t latestLapTime;
-	clock_t currentLapTime;
 	
 };
