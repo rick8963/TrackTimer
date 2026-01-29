@@ -45,7 +45,7 @@ private:
 	bool passSector(unsigned int i);
 	void nextLap();
 
-	Lap* currentLap;
+	std::optional<size_t> currentLapIndex;
 	std::vector<Lap> laps;
 	clock_t sessionStartTime;
 	clock_t sessionEndTime;

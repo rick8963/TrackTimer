@@ -10,8 +10,7 @@ Track::Track()
 	sessionEndTime(0),
 	bestLapTime(0),
 	latestLapTime(0),
-	currentLapTime(0),
-	currentLap(nullptr)
+	currentLapTime(0)
 {}
 
 Track::Track(vector<Line2D> nds, bool isCircuit)
@@ -27,8 +26,7 @@ Track::Track(vector<Line2D> nds, bool isCircuit)
 	sessionEndTime(0),
 	bestLapTime(0),
 	latestLapTime(0),
-	currentLapTime(0),
-	currentLap(nullptr)
+	currentLapTime(0)
 {
 
 	for (int i = 0; i < sectorCount - 1; i++)
@@ -45,21 +43,20 @@ bool Track::passSector(unsigned int i)
 	Line2D* sector = &nodes.at(i);
 	if (!sector->isPointInInterval(lastPos) && !sector->isPointInInterval(currentPos)) return false; // not in detect interval
 	if (sector->crossValue(lastPos) * sector->crossValue(currentPos) > 0) return false; // not pass a sector
-	
-	if (currentLap != nullptr)
+	if (!currentLapIndex.has_value()) return true; // no current lap, just return
+
+	Lap& lap = laps[currentLapIndex.value()];
+	if (lap.setSectorTime(currentSector, clock()))
 	{
-		if (currentLap->setSectorTime(currentSector, clock()))
-		{
-			cout << "sector " << currentSector + 1 << " recorded succesfully" << endl;
-		}
-		else {
-			cout << "sector " << currentSector + 1 << " recorded falied" << endl;
-		}
-		if (currentLap->getSectorTime(currentSector).has_value())
-			cout << currentLap->getSectorTime(currentSector).value() << " ticks" << endl;
-		else
-			cout << "N/A" << endl;
+		cout << "sector " << currentSector + 1 << " recorded succesfully" << endl;
 	}
+	else {
+		cout << "sector " << currentSector + 1 << " recorded falied" << endl;
+	}
+	if (lap.getSectorTime(currentSector).has_value())
+		cout << lap.getSectorTime(currentSector).value() << " ticks" << endl;
+	else
+		cout << "N/A" << endl;
 
 	return true;
 }
@@ -80,7 +77,7 @@ void Track::nextLap()
 	for (auto& sector : sectors) sector.reset();
 	std::fill(passState.begin(), passState.end(), false);
 	laps.push_back(Lap(sectorCount, clock()));
-	currentLap = &laps.back();
+	currentLapIndex = laps.size() - 1;
 }
 
 vector<bool>& const Track::getPassState()
