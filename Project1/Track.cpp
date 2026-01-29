@@ -1,5 +1,5 @@
 #include "Track.h"
-#include<iostream>
+
 Track::Track()
 	: sectorCount(0),
 	currentSector(0),
@@ -42,17 +42,7 @@ bool Track::passSector(unsigned int i)
 	if (!currentLapIndex.has_value()) return true;
 
 	Lap& lap = laps[currentLapIndex.value()];
-	if (lap.setSectorTime(currentSector, clock()))
-	{
-		cout << "sector " << currentSector + 1 << " recorded successfully" << endl;
-	}
-	else {
-		cout << "sector " << currentSector + 1 << " recorded failed" << endl;
-	}
-	if (lap.getSectorTime(currentSector).has_value())
-		cout << lap.getSectorTime(currentSector).value() << " ticks" << endl;
-	else
-		cout << "N/A" << endl;
+	lap.setSectorTime(currentSector, clock()); // this function return value is bool	
 
 	return true;
 }
@@ -82,19 +72,25 @@ void Track::nextLap()
 	// Update lap statistics if there was a previous lap
 	if (currentLapIndex.has_value())
 	{
-		clock_t lapTime = laps[currentLapIndex.value()].getLapTime();
-		latestLapTime = lapTime;
-		
-		// Update best lap time (only for valid laps)
-		if (lastLapValid && (bestLapTime == 0 || lapTime < bestLapTime))
+		Lap& prevLap = laps[currentLapIndex.value()];
+		clock_t lapTime = prevLap.getLapTime();
+
+		// Only update statistics if lap is completed (lapTime > 0)
+		if (lapTime > 0)
 		{
-			bestLapTime = lapTime;
+			latestLapTime = lapTime;
+
+			// Update best lap time (only for valid and completed laps)
+			if (lastLapValid && (bestLapTime == 0 || lapTime < bestLapTime))
+			{
+				bestLapTime = lapTime;
+			}
 		}
 	}
-	
+
 	// Reset all sectors
 	for (auto& sector : sectors) sector.reset();
-	
+
 	// Create new lap
 	laps.push_back(Lap(sectorCount, clock()));
 	currentLapIndex = laps.size() - 1;
@@ -123,15 +119,20 @@ void Track::updatePos(Point2D& pos)
 	// pass start line
 	if (passSector(0))
 	{
+		// Record the last sector time BEFORE creating new lap
+		if (currentLapIndex.has_value() && currentSector == sectorCount - 1)
+		{
+			Lap& lap = laps[currentLapIndex.value()];
+			lap.setSectorTime(sectorCount - 1, clock());
+		}
+
 		// Check if last lap was valid using Sector states
 		lastLapValid = isAllSectorsPassed();
-		
-		cout << "last lap is valid: " << lastLapValid << endl;
 		nextLap();
 		currentSector = 0;
 		return;
 	}
-	if(currentSector == sectorCount - 1) return;
+	if (currentSector == sectorCount - 1) return;
 	if (passSector(currentSector + 1))
 	{
 		// Mark current sector as passed

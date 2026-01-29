@@ -134,7 +134,6 @@
     <ClCompile Include="Line2D.cpp" />
     <ClCompile Include="Point2D.cpp" />
     <ClCompile Include="Sector.cpp" />
-    <ClCompile Include="LapTimer.cpp" />
     <ClCompile Include="Track.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -143,7 +142,6 @@
     <ClInclude Include="Line2D.h" />
     <ClInclude Include="Point2D.h" />
     <ClInclude Include="Sector.h" />
-    <ClInclude Include="LapTimer.h" />
     <ClInclude Include="Track.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

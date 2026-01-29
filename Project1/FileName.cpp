@@ -6,6 +6,7 @@
 
 using namespace std;
 
+// dummy funcion to update postion
 void updatePos(Point2D& pos)
 {
 	const int x = pos.getX();
@@ -54,23 +55,18 @@ int main()
 
 
 		Line2D curSector = SQR.getNextCheckpoint();
-		vector<bool> passState = SQR.getPassState();
+		const vector<Sector>& sectors = SQR.getSectors();
 
 		cout << "current pos (" << currentPos.getX() << ", " << currentPos.getY() << ")\tat sector " << SQR.getCurrentSectorCount() + 1 << endl
 			<< curSector.distanceToLine(currentPos) << " meters to next checkpoint (" << curSector.getPoint1().getX() << ", " << curSector.getPoint1().getY() << "), "
 			<< "(" << curSector.getPoint2().getX() << ", " << curSector.getPoint2().getY() << ")" << endl;
+		cout << "\n=== Sector Status ===" << endl;
+		for (const auto& sector : SQR.getSectors())
+		{
+			cout << "Sector " << sector.getStartNodeIndex() + 1 << ": "
+				<< (sector.isPassed() ? " Passed" : " Not passed") << endl;
+		}
 		
-		cout << "sectors state : \n";
-		for (int i = 0; i < SQR.getSectorCount(); i++)
-		{
-			cout << "Sector " << i + 1 << "\t";
-		}
-		cout << endl;
-		for (auto state : SQR.getPassState())
-		{
-			cout << (state ? "True" : "False") << "\t\t";
-		}
-		cout << endl << endl;
 		//Sleep(500);
 	}
 	cout << SQR.getLaps().size() << " laps in total" << endl;
@@ -88,6 +84,10 @@ int main()
 		}
 			
 	}
+
+	cout << "\n=== Session Statistics ===" << endl;
+	cout << "Best lap time: " << SQR.getBestLapTime() << " ticks" << endl;
+	cout << "Latest lap time: " << SQR.getLatestLapTime() << " ticks" << endl;
 
 	 //22.857318, 120.289120
 	 //22.856466, 120.289463
