@@ -55,7 +55,8 @@ bool Lap::stop(clock_t t)
 
 clock_t Lap::getLapTime() const
 {
-	if (lapStartTime == 0 || lapEndTime <= lapStartTime) return 0;
+	if (lapEndTime == 0) return 0;  // Lap not finished
+	if (lapStartTime == 0) return 0;  // Invalid lap
 	return lapEndTime - lapStartTime;
 }
 
