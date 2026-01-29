@@ -27,8 +27,8 @@ bool Lap::setSectorTime(unsigned int index, clock_t t)
 	if (lapStartTime == 0) return false; // lap not started
 
 	// Ensure all previous sectors have values
-	for (unsigned int i = 0; i < index; ++i)
-		if (!sectorTimes[i].has_value()) return false;
+	/*for (unsigned int i = 0; i < index; ++i)
+		if (!sectorTimes[i].has_value()) return false;*/
 
 	clock_t cumulativeBefore = 0;
 	for (unsigned int i = 0; i < index; ++i)

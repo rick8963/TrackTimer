@@ -12,8 +12,7 @@ Track::Track()
 	latestLapTime(0),
 	currentLapTime(0),
 	currentLap(nullptr)
-{	
-}
+{}
 
 Track::Track(vector<Line2D> nds, bool isCircuit)
 	:
@@ -48,15 +47,15 @@ bool Track::passSector(unsigned int i)
 	
 	if (currentLap != nullptr)
 	{
-		if (currentLap->setSectorTime(i, clock()))
+		if (currentLap->setSectorTime(currentSector, clock()))
 		{
-			cout << "sector " << i + 1 << " recorded succesfully" << endl;
+			cout << "sector " << currentSector + 1 << " recorded succesfully" << endl;
 		}
 		else {
-			cout << "sector " << i + 1 << " recorded falied" << endl;
+			cout << "sector " << currentSector + 1 << " recorded falied" << endl;
 		}
-		if (currentLap->getSectorTime(i).has_value())
-			cout << currentLap->getSectorTime(i).value() << " ticks" << endl;
+		if (currentLap->getSectorTime(currentSector).has_value())
+			cout << currentLap->getSectorTime(currentSector).value() << " ticks" << endl;
 		else
 			cout << "N/A" << endl;
 	}
@@ -79,7 +78,6 @@ void Track::nextLap()
 {
 	//std::fill(passState.begin(), passState.end(), false);
 	for (auto& sector : sectors) sector.reset();
-	currentSector = 0;
 	laps.push_back(Lap(sectorCount, clock()));
 	currentLap = &laps.back();
 }
@@ -120,6 +118,7 @@ void Track::updatePos(Point2D& pos)
 		//for (auto state : passState) if (!state) lastLapValid = false; // check last lap is valid
 		cout << "last lap is invalid###########" << lastLapValid << endl;
 		nextLap();
+		currentSector = 0;
 		return;
 	}
 	if(currentSector == sectorCount - 1) return;
