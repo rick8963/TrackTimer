@@ -3,15 +3,15 @@
 class GPSPoint : public Point2D
 {
 public:
-	GPSPoint(float nmeaLat, float nmeaLng);
-	float getLatitude();
-	float getLongitude();
+	GPSPoint(double nmeaLat, double nmeaLng);
+	double getLatitude();
+	double getLongitude();
 
 private:
 	GPSPoint();
-	float latitude;
-	float longitude;
+	double latitude;
+	double longitude;
 	
-	float convertNMEAToDecimalDegrees(float nmeaCoordinate);
+	double convertNMEAToDecimalDegrees(double nmeaCoordinate);
 };
 
