@@ -21,6 +21,24 @@ GPSPoint::GPSPoint(double nmeaLat, double nmeaLng)
 	y = kScaleFactor * latRad * earthEquRadius; // 北向近似
 }
 
+GPSPoint::GPSPoint(double lat, double lng, bool isDecimalDegrees)
+{
+	if (isDecimalDegrees) {
+		initFromDecimalDegrees(lat, lng);
+	}
+	else {
+		// 若需要也可以處理 NMEA 格式
+		latitude = convertNMEAToDecimalDegrees(lat);
+		longitude = convertNMEAToDecimalDegrees(lng);
+
+		double latRad = latitude * DEG_TO_RAD;
+		double lonRad = longitude * DEG_TO_RAD;
+		double deltaLon = lonRad - kCentralMeridian;
+		x = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
+		y = kScaleFactor * latRad * earthEquRadius;
+	}
+}
+
 double GPSPoint::getLatitude()
 {
 	return latitude;
@@ -36,4 +54,16 @@ double GPSPoint::convertNMEAToDecimalDegrees(double nmeaCoordinate)
 	int degrees = static_cast<int>(nmeaCoordinate / 100);
 	double minutes = nmeaCoordinate - degrees * 100;
 	return degrees + minutes / 60.0;
+}
+
+void GPSPoint::initFromDecimalDegrees(double lat, double lng)
+{
+	latitude = lat;
+	longitude = lng;
+
+	double latRad = latitude * DEG_TO_RAD;
+	double lonRad = longitude * DEG_TO_RAD;
+	double deltaLon = lonRad - kCentralMeridian;
+	x = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
+	y = kScaleFactor * latRad * earthEquRadius;
 }

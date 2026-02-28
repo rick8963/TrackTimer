@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <Windows.h>
+#include <iomanip>
 #include "Track.h"
 #include "GPSPoint.h"
 
@@ -68,10 +69,13 @@ bool parseGPGGA_raw(const std::string& line, double& lat_raw, double& lon_raw,
 
 int main() {
     vector<Line2D> TKSsectors;
-    TKSsectors.push_back(Line2D(GPSPoint(2244.515, 12019.328), 5, 30));
-    TKSsectors.push_back(Line2D(GPSPoint(2244.572, 12019.309), 270, 30));
-    TKSsectors.push_back(Line2D(GPSPoint(2244.550, 12019.297), 90, 30));
-    TKSsectors.push_back(Line2D(GPSPoint(2244.510, 12019.314), 255, 30));
+    TKSsectors.push_back(Line2D(GPSPoint(22.742248, 120.322181, true), 0, 20));
+    TKSsectors.push_back(Line2D(GPSPoint(22.742798, 120.321496, true), 180, 20));
+    TKSsectors.push_back(Line2D(GPSPoint(22.742724, 120.322010, true), 180, 20));
+    TKSsectors.push_back(Line2D(GPSPoint(22.742285, 120.321387, true), 60, 20));
+    TKSsectors.push_back(Line2D(GPSPoint(22.742540, 120.321959, true), 88, 20));
+    TKSsectors.push_back(Line2D(GPSPoint(22.741863, 120.321912, true), 262, 20));
+    TKSsectors.push_back(Line2D(GPSPoint(22.741763, 120.321930, true), 81, 20));
     Track TKS(TKSsectors);
 
     std::ifstream file("TKS.nmea");
@@ -106,17 +110,17 @@ int main() {
                 << curSector.getPoint2().getX() << ", " << curSector.getPoint2().getY()
                 << ")\n";
 
-            cout << "\n=== Sector Status ===\n";
-            for (const auto& sector : TKS.getSectors()) {
-                cout << "Sector " << sector.getStartNodeIndex() + 1 << ": "
-                    << (sector.isPassed() ? " Passed" : " Not passed") << "\n";
-            }
+            //cout << "\n=== Sector Status ===\n";
+            //for (const auto& sector : TKS.getSectors()) {
+            //    cout << "Sector " << sector.getStartNodeIndex() + 1 << ": "
+            //        << (sector.isPassed() ? " Passed" : " Not passed") << "\n";
+            //}
         }
         //Sleep(500);
     }
 
     file.close();
-
+    cout << fixed << setprecision(3);
     cout << TKS.getLaps().size() << " laps in total\n";
     int i = 1;
     for (auto& lap : TKS.getLaps()) {

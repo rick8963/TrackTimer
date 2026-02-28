@@ -51,9 +51,43 @@ bool Track::passSector(unsigned int i, TimeMs timestamp) {
     if (sector->crossValue(lastPos) * sector->crossValue(currentPos) > 0) return false;
     if (!currentLapIndex.has_value()) return true;
 
+    // 使用內插計算精確通過時間
+    TimeMs accurateTime = interpolateCrossingTime(lastPos, currentPos, *sector, lastTimestamp, timestamp);
+
     Lap& lap = laps[currentLapIndex.value()];
-    lap.setSectorTime(currentSector, timestamp);
+    lap.setSectorTime(currentSector, accurateTime);  // 使用內插後的時間
     return true;
+}
+
+TimeMs Track::interpolateCrossingTime(const Point2D& prevPos, const Point2D& currPos,
+    const Line2D& line, TimeMs prevTime, TimeMs currTime) const {
+    // 計算前後兩點到分段線的有向距離
+    double dist1 = line.distanceToLine(prevPos);
+    double dist2 = line.distanceToLine(currPos);
+
+    // 確保兩點在分段線兩側
+    double cross1 = line.crossValue(prevPos);
+    double cross2 = line.crossValue(currPos);
+
+    if (cross1 * cross2 > 0) {
+        // 同側，不應發生，返回當前時間
+        return currTime;
+    }
+
+    // 計算距離比例（線性內插）
+    double totalDist = dist1 + dist2;
+    if (totalDist < 1e-6) {
+        // 距離太小，直接返回當前時間
+        return currTime;
+    }
+
+    double ratio = dist1 / totalDist;
+
+    // 根據距離比例內插時間
+    TimeMs timeDiff = currTime - prevTime;
+    TimeMs interpolatedTime = prevTime + static_cast<TimeMs>(timeDiff * ratio);
+
+    return interpolatedTime;
 }
 
 unsigned int Track::getSectorCount() const {
