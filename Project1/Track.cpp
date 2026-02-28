@@ -1,15 +1,25 @@
 #include "Track.h"
 
+// Helper function to handle midnight rollover
+static double adjustTimeForMidnight(double currentTime, double lastTime) {
+	// If time goes backward by more than 12 hours, assume midnight rollover
+	if (lastTime - currentTime > 43200000.0) { // 12 hours in milliseconds
+		return currentTime + 86400000.0; // Add 24 hours
+	}
+	return currentTime;
+}
+
 Track::Track()
 	: sectorCount(0),
 	currentSector(0),
 	currentPos(Point2D(0, 0)),
 	lastPos(Point2D(0, 0)),
 	lastLapValid(true),
-	sessionStartTime(clock()),
+	sessionStartTime(0),
 	sessionEndTime(0),
 	bestLapTime(0),
-	latestLapTime(0)
+	latestLapTime(0),
+	lastTimestamp(0)
 {}
 
 Track::Track(vector<Line2D> nds, bool isCircuit)
@@ -20,10 +30,11 @@ Track::Track(vector<Line2D> nds, bool isCircuit)
 	currentPos(Point2D(0, 0)),
 	lastPos(Point2D(0, 0)),
 	lastLapValid(true),
-	sessionStartTime(clock()),
+	sessionStartTime(0),
 	sessionEndTime(0),
 	bestLapTime(0),
-	latestLapTime(0)
+	latestLapTime(0),
+	lastTimestamp(0)
 {
 	for (int i = 0; i < sectorCount - 1; i++)
 	{
@@ -33,7 +44,7 @@ Track::Track(vector<Line2D> nds, bool isCircuit)
 	if(isCircuit) sectors.push_back(Sector(sectorCount - 1, 0));
 }
 
-bool Track::passSector(unsigned int i)
+bool Track::passSector(unsigned int i, double timestamp)
 {
 	if (i >= nodes.size()) return false;
 	Line2D* sector = &nodes.at(i);
@@ -42,7 +53,7 @@ bool Track::passSector(unsigned int i)
 	if (!currentLapIndex.has_value()) return true;
 
 	Lap& lap = laps[currentLapIndex.value()];
-	lap.setSectorTime(currentSector, clock());
+	lap.setSectorTime(currentSector, timestamp);
 
 	return true;
 }
@@ -67,13 +78,13 @@ bool Track::isAllSectorsPassed() const
 }
 
 // lap completed
-void Track::nextLap()
+void Track::nextLap(double timestamp)
 {
 	// Update lap statistics if there was a previous lap
 	if (currentLapIndex.has_value())
 	{
 		Lap& prevLap = laps[currentLapIndex.value()];
-		clock_t lapTime = prevLap.getLapTime();
+		double lapTime = prevLap.getLapTime();
 
 		// Only update statistics if lap is completed (lapTime > 0)
 		if (lapTime > 0)
@@ -92,7 +103,7 @@ void Track::nextLap()
 	for (auto& sector : sectors) sector.reset();
 
 	// Create new lap
-	laps.push_back(Lap(sectorCount, clock()));
+	laps.push_back(Lap(sectorCount, timestamp));
 	currentLapIndex = laps.size() - 1;
 }
 
@@ -111,19 +122,30 @@ Point2D Track::getCurrentPos() const
 	return Point2D(currentPos);
 }
 
-void Track::updatePos(Point2D& pos)
+void Track::updatePos(Point2D& pos, double timestamp)
 {
+	// Handle midnight rollover
+	if (lastTimestamp > 0) {
+		timestamp = adjustTimeForMidnight(timestamp, lastTimestamp);
+	}
+	
+	// Initialize session start time on first update
+	if (sessionStartTime == 0) {
+		sessionStartTime = timestamp;
+	}
+	
 	lastPos = currentPos;
 	currentPos = pos;
+	lastTimestamp = timestamp;
 
 	// pass start line
-	if (passSector(0))
+	if (passSector(0, timestamp))
 	{
 		// Record the last sector time BEFORE creating new lap
 		if (currentLapIndex.has_value() && currentSector == sectorCount - 1)
 		{
 			Lap& lap = laps[currentLapIndex.value()];
-			lap.setSectorTime(sectorCount - 1, clock());
+			lap.setSectorTime(sectorCount - 1, timestamp);
 			
 			// Mark the last sector as passed before validation
 			if (currentSector < sectors.size())
@@ -134,12 +156,12 @@ void Track::updatePos(Point2D& pos)
 
 		// Check if last lap was valid using Sector states
 		lastLapValid = isAllSectorsPassed();
-		nextLap();
+		nextLap(timestamp);
 		currentSector = 0;
 		return;
 	}
 	if (currentSector == sectorCount - 1) return;
-	if (passSector(currentSector + 1))
+	if (passSector(currentSector + 1, timestamp))
 	{
 		// Mark current sector as passed
 		if (currentSector < sectors.size())
@@ -155,22 +177,22 @@ const std::vector<Lap>& Track::getLaps() const
 	return laps;
 }
 
-clock_t Track::getBestLapTime() const
+double Track::getBestLapTime() const
 {
 	return bestLapTime;
 }
 
-clock_t Track::getLatestLapTime() const
+double Track::getLatestLapTime() const
 {
 	return latestLapTime;
 }
 
-clock_t Track::getSessionStartTime() const
+double Track::getSessionStartTime() const
 {
 	return sessionStartTime;
 }
 
-clock_t Track::getSessionEndTime() const
+double Track::getSessionEndTime() const
 {
 	return sessionEndTime;
 }

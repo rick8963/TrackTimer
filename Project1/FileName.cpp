@@ -21,31 +21,44 @@ std::vector<std::string> splitNmea(const std::string& line)
 	return fields;
 }
 
-// 解析 GPRMC：取得 ddmm.mmmm / dddmm.mmmm 形式的原始值
+// Parse NMEA time stamp (hhmmss.sss) and convert to milliseconds
+double parseNmeaTime(const std::string& timeStr) {
+	if (timeStr.empty() || timeStr.length() < 6) return 0.0;
+	
+	int hours = std::stoi(timeStr.substr(0, 2));
+	int minutes = std::stoi(timeStr.substr(2, 2));
+	double seconds = std::stof(timeStr.substr(4));
+	
+	return (hours * 3600.0 + minutes * 60.0 + seconds) * 1000.0; // Convert to milliseconds
+}
+
+// Parse GPRMC with timestamp
 bool parseGPRMC_raw(const std::string& line, double& lat_raw, double& lon_raw,
-	char& lat_hemi, char& lon_hemi)
+	char& lat_hemi, char& lon_hemi, double& timestamp)
 {
 	auto f = splitNmea(line);
 	if (f.size() < 7) return false;
 	if (f[0].find("GPRMC") == std::string::npos) return false;
-	if (f[2] != "A") return false; // A = 有效定位
+	if (f[2] != "A") return false; // A = valid position
 
-	lat_raw = std::atof(f[3].c_str());   // 例如 2244.49650
+	timestamp = parseNmeaTime(f[1]); // Field 1 is UTC time
+	lat_raw = std::atof(f[3].c_str());   // e.g., 2244.49650
 	lat_hemi = f[4].empty() ? 'N' : f[4][0]; // N / S
-	lon_raw = std::atof(f[5].c_str());   // 例如 12019.30793
+	lon_raw = std::atof(f[5].c_str());   // e.g., 12019.30793
 	lon_hemi = f[6].empty() ? 'E' : f[6][0]; // E / W
 
 	return true;
 }
 
-// 解析 GPGGA：取得 ddmm.mmmm / dddmm.mmmm 形式的原始值
+// Parse GPGGA with timestamp
 bool parseGPGGA_raw(const std::string& line, double& lat_raw, double& lon_raw,
-	char& lat_hemi, char& lon_hemi)
+	char& lat_hemi, char& lon_hemi, double& timestamp)
 {
 	auto f = splitNmea(line);
 	if (f.size() < 6) return false;
 	if (f[0].find("GPGGA") == std::string::npos) return false;
 
+	timestamp = parseNmeaTime(f[1]); // Field 1 is UTC time
 	lat_raw = std::atof(f[2].c_str());
 	lat_hemi = f[3].empty() ? 'N' : f[3][0];
 	lon_raw = std::atof(f[4].c_str());
@@ -64,9 +77,9 @@ int main()
 	Track TKS(TKSsectors);
 
 
-	std::ifstream file("TKS.nmea");  // 改成你的檔案名
+	std::ifstream file("TKS.nmea");
 	if (!file.is_open()) {
-		std::cerr << "無法開啟 TKS.nmea\n";
+		std::cerr << "Unable to open TKS.nmea\n";
 		return 1;
 	}
 
@@ -76,30 +89,26 @@ int main()
 		line_num++;
 		if (line.empty() || line[0] != '$') continue;
 
-		double lat_raw, lon_raw;
+		double lat_raw, lon_raw, timestamp;
 		char lat_hemi, lon_hemi;
 
 
-		if (parseGPRMC_raw(line, lat_raw, lon_raw, lat_hemi, lon_hemi)) {};
+		if (parseGPRMC_raw(line, lat_raw, lon_raw, lat_hemi, lon_hemi, timestamp)) {
+			GPSPoint currentPos(lat_raw, lon_raw);
+			TKS.updatePos(currentPos, timestamp);
 
-		/*double lat_dec = (int(lat_raw / 100) + (lat_raw - int(lat_raw / 100) * 100) / 60.0);
-		double lon_dec = (int(lon_raw / 100) + (lon_raw - int(lon_raw / 100) * 100) / 60.0);*/
-		//printf("Lat: %.5f\tLon: %.5f\n", lat_dec, lon_dec);  // Lat: N 2244.49650
-		
-		GPSPoint currentPos(lat_raw, lon_raw);
-		TKS.updatePos(currentPos);
+			Line2D curSector = TKS.getNextCheckpoint();
+			const vector<Sector>& sectors = TKS.getSectors();
 
-		Line2D curSector = TKS.getNextCheckpoint();
-		const vector<Sector>& sectors = TKS.getSectors();
-
-		cout << "current pos (" << currentPos.getX() << ", " << currentPos.getY() << ")\tat sector " << TKS.getCurrentSectorCount() + 1 << endl
-			<< curSector.distanceToLine(currentPos) << " meters to next checkpoint (" << curSector.getPoint1().getX() << ", " << curSector.getPoint1().getY() << "), "
-			<< "(" << curSector.getPoint2().getX() << ", " << curSector.getPoint2().getY() << ")" << endl;
-		cout << "\n=== Sector Status ===" << endl;
-		for (const auto& sector : TKS.getSectors())
-		{
-			cout << "Sector " << sector.getStartNodeIndex() + 1 << ": "
-				<< (sector.isPassed() ? " Passed" : " Not passed") << endl;
+			cout << "current pos (" << currentPos.getX() << ", " << currentPos.getY() << ")\tat sector " << TKS.getCurrentSectorCount() + 1 << endl
+				<< curSector.distanceToLine(currentPos) << " meters to next checkpoint (" << curSector.getPoint1().getX() << ", " << curSector.getPoint1().getY() << "), "
+				<< "(" << curSector.getPoint2().getX() << ", " << curSector.getPoint2().getY() << ")" << endl;
+			cout << "\n=== Sector Status ===" << endl;
+			for (const auto& sector : TKS.getSectors())
+			{
+				cout << "Sector " << sector.getStartNodeIndex() + 1 << ": "
+					<< (sector.isPassed() ? " Passed" : " Not passed") << endl;
+			}
 		}
 		//Sleep(500);
 	}
@@ -110,12 +119,12 @@ int main()
 	int i = 1;
 	for (auto& lap : TKS.getLaps())
 	{
-		cout << "Lap " << i++ << " : " << lap.getLapTime() << " ticks" << endl;
+		cout << "Lap " << i++ << " : " << lap.getLapTime() / 1000.0 << " seconds" << endl;
 		for (int j = 0; j < TKS.getSectorCount() ; j++)
 		{
 			auto sectorTime = lap.getSectorTime(j);
 			if (sectorTime.has_value())
-				cout << "\tSector " << j + 1 << " : " << sectorTime.value() << " ticks" << endl;
+				cout << "\tSector " << j + 1 << " : " << sectorTime.value() / 1000.0 << " seconds" << endl;
 			else
 				cout << "\tSector " << j + 1 << " : " << "N/A" << endl;
 		}
@@ -123,8 +132,8 @@ int main()
 	}
 
 	cout << "\n=== Session Statistics ===" << endl;
-	cout << "Best lap time: " << TKS.getBestLapTime() << " ticks" << endl;
-	cout << "Latest lap time: " << TKS.getLatestLapTime() << " ticks" << endl;
+	cout << "Best lap time: " << TKS.getBestLapTime() / 1000.0 << " seconds" << endl;
+	cout << "Latest lap time: " << TKS.getLatestLapTime() / 1000.0 << " seconds" << endl;
 
 	 //22.857318, 120.289120
 	 //22.856466, 120.289463

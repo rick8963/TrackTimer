@@ -7,35 +7,31 @@ Lap::Lap(int numSectors)
 	sectorTimes(numSectors) // initialize as nullopt
 {}
 
-Lap::Lap(int numSectors, clock_t startTime)
+Lap::Lap(int numSectors, double startTime)
 	: lapStartTime(startTime),
 	lapEndTime(0),
 	sectorCount(numSectors),
 	sectorTimes(numSectors) // initialize as nullopt
 {}
 
-bool Lap::start(clock_t t)
+bool Lap::start(double t)
 {
 	if (lapStartTime != 0) return false;
 	lapStartTime = t;
 	return true;
 }
 
-bool Lap::setSectorTime(unsigned int index, clock_t t)
+bool Lap::setSectorTime(unsigned int index, double t)
 {
 	if (index >= sectorCount) return false;
 	if (lapStartTime == 0) return false; // lap not started
 
-	// Ensure all previous sectors have values
-	/*for (unsigned int i = 0; i < index; ++i)
-		if (!sectorTimes[i].has_value()) return false;*/
-
-	clock_t cumulativeBefore = 0;
+	double cumulativeBefore = 0;
 	for (unsigned int i = 0; i < index; ++i)
 		cumulativeBefore += sectorTimes[i].value_or(0);
 
-	clock_t lastSectorEndTime = lapStartTime + cumulativeBefore;
-	clock_t duration = t - lastSectorEndTime;
+	double lastSectorEndTime = lapStartTime + cumulativeBefore;
+	double duration = t - lastSectorEndTime;
 	if (duration < 0) return false; // guard
 
 	sectorTimes[index] = duration;
@@ -46,21 +42,21 @@ bool Lap::setSectorTime(unsigned int index, clock_t t)
 	return true;
 }
 
-bool Lap::stop(clock_t t)
+bool Lap::stop(double t)
 {
 	if (lapStartTime == 0 || lapEndTime != 0) return false;
 	lapEndTime = t;
 	return true;
 }
 
-clock_t Lap::getLapTime() const
+double Lap::getLapTime() const
 {
 	if (lapEndTime == 0) return 0;  // Lap not finished
 	if (lapStartTime == 0) return 0;  // Invalid lap
 	return lapEndTime - lapStartTime;
 }
 
-std::optional<clock_t> Lap::getSectorTime(unsigned int index) const
+std::optional<double> Lap::getSectorTime(unsigned int index) const
 {
 	if (index >= sectorCount) return std::nullopt;
 	return sectorTimes[index];
