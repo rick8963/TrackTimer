@@ -3,10 +3,10 @@
 #include <cmath>
 
 constexpr double DEG_TO_RAD = M_PI / 180.0;
-constexpr double kCentralMeridian = 121.0 * DEG_TO_RAD; // ¥H¥xÆW¤¤¥¡¸g½u¬°¨Ò
-constexpr double kScaleFactor = 0.9999; // ¾î³Á¥d¦«§ë¼v¤Ø«×¦]¤l
-constexpr double kFalseEasting = 250000.0; // °¾²¾¶q
-constexpr double earthEquRadius = 6378137.0; // ¦a²y¨ª¹D¥b®|
+constexpr double kCentralMeridian = 121.0 * DEG_TO_RAD; // ä»¥å°ç£ä¸­å¤®ç¶“ç·šç‚ºä¾‹
+constexpr double kScaleFactor = 0.9999; // æ©«éº¥å¡æ‰˜æŠ•å½±å°ºåº¦å› å­
+constexpr double kFalseEasting = 250000.0; // åç§»é‡
+constexpr double earthEquRadius = 6378137.0; // åœ°çƒèµ¤é“åŠå¾‘
 
 GPSPoint::GPSPoint(double nmeaLat, double nmeaLng)
 {
@@ -16,9 +16,13 @@ GPSPoint::GPSPoint(double nmeaLat, double nmeaLng)
 	double latRad = latitude * DEG_TO_RAD;
 	double lonRad = longitude * DEG_TO_RAD;
 	double deltaLon = lonRad - kCentralMeridian;
-	// ­pºâTM§ë¼vªº¤½¦¡¥Ü·N (»İ§¹¾ã¾ò²yÅé©M°Ñ¼Æ¤½¦¡)
-	x = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting; // ªF°¾²¾
-	y = kScaleFactor * latRad * earthEquRadius; // ¥_¦Vªñ¦ü
+	
+	double x_meters = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
+	double y_meters = kScaleFactor * latRad * earthEquRadius;
+	
+	// è½‰æ›æˆå…¬åˆ†ä¸¦å„²å­˜ç‚º int32_t (é¿å…æ¯«ç±³æº¢ä½)
+	x_cm = static_cast<int32_t>(x_meters * 100.0 + 0.5);
+	y_cm = static_cast<int32_t>(y_meters * 100.0 + 0.5);
 }
 
 GPSPoint::GPSPoint(double lat, double lng, bool isDecimalDegrees)
@@ -27,32 +31,35 @@ GPSPoint::GPSPoint(double lat, double lng, bool isDecimalDegrees)
 		initFromDecimalDegrees(lat, lng);
 	}
 	else {
-		// ­Y»İ­n¤]¥i¥H³B²z NMEA ®æ¦¡
 		latitude = convertNMEAToDecimalDegrees(lat);
 		longitude = convertNMEAToDecimalDegrees(lng);
 
 		double latRad = latitude * DEG_TO_RAD;
 		double lonRad = longitude * DEG_TO_RAD;
 		double deltaLon = lonRad - kCentralMeridian;
-		x = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
-		y = kScaleFactor * latRad * earthEquRadius;
+		
+		double x_meters = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
+		double y_meters = kScaleFactor * latRad * earthEquRadius;
+		
+		x_cm = static_cast<int32_t>(x_meters * 100.0 + 0.5);
+		y_cm = static_cast<int32_t>(y_meters * 100.0 + 0.5);
 	}
 }
 
-double GPSPoint::getLatitude()
+double GPSPoint::getLatitude() const
 {
 	return latitude;
 }
 
-double GPSPoint::getLongitude()
+double GPSPoint::getLongitude() const
 {
 	return longitude;
 }	
 
 double GPSPoint::convertNMEAToDecimalDegrees(double nmeaCoordinate)
 {
-	int degrees = static_cast<int>(nmeaCoordinate / 100);
-	double minutes = nmeaCoordinate - degrees * 100;
+	int degrees = static_cast<int>(nmeaCoordinate / 100.0);
+	double minutes = nmeaCoordinate - degrees * 100.0;
 	return degrees + minutes / 60.0;
 }
 
@@ -64,6 +71,10 @@ void GPSPoint::initFromDecimalDegrees(double lat, double lng)
 	double latRad = latitude * DEG_TO_RAD;
 	double lonRad = longitude * DEG_TO_RAD;
 	double deltaLon = lonRad - kCentralMeridian;
-	x = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
-	y = kScaleFactor * latRad * earthEquRadius;
+	
+	double x_meters = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
+	double y_meters = kScaleFactor * latRad * earthEquRadius;
+	
+	x_cm = static_cast<int32_t>(x_meters * 100.0 + 0.5);
+	y_cm = static_cast<int32_t>(y_meters * 100.0 + 0.5);
 }

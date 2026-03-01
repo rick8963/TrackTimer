@@ -5,83 +5,69 @@
 constexpr double DEG_TO_RAD = M_PI / 180.0;
 
 Line2D::Line2D(const Point2D& p1, const Point2D& p2)
-	: point1(p1), point2(p2), length(p1.distanceTo(p2)) {}
-
-Line2D::Line2D(const Point2D& p, double direction, double width) {
-	const double halfWidth = width / 2.0f;
-	point1 = Point2D(p.getX() - halfWidth * std::cos(direction * DEG_TO_RAD), p.getY() - halfWidth * std::sin(direction * DEG_TO_RAD));
-	point2 = Point2D(p.getX() + halfWidth * std::cos(direction * DEG_TO_RAD), p.getY() + halfWidth * std::sin(direction * DEG_TO_RAD));
-	length = point1.distanceTo(point2);
+	: point1(p1), point2(p2) {
+    updateCachedValues();
 }
 
-Point2D Line2D::getPoint1() const { return point1; }
-Point2D Line2D::getPoint2() const { return point2; }
-double Line2D::getLength() const { return length; }
-
-void Line2D::setPoint1(const Point2D& p) { point1 = p; }
-void Line2D::setPoint2(const Point2D& p) { point2 = p; }
-
-double Line2D::distanceToLine(const Point2D& p) const {
-	double x1 = point1.getX();
-	double y1 = point1.getY();
-	double x2 = point2.getX();
-	double y2 = point2.getY();
-	double x0 = p.getX();
-	double y0 = p.getY();
-
-	double numerator = std::abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
-	double denominator = std::sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
-
-	if (denominator == 0) {
-		// The line segment is actually a single point
-		// Return the distance from p to that point
-		double dx = x0 - x1;
-		double dy = y0 - y1;
-		return std::sqrt(dx * dx + dy * dy);
-	}
-	return numerator / denominator;
+Line2D::Line2D(const Point2D& p, float direction_deg, float width_meters) {
+	// 將外部傳入的度數和公尺，轉換為弧度和公分
+	const double direction_rad = direction_deg * DEG_TO_RAD;
+	const float halfWidthCm = (width_meters * 0.5f) * 100.0f; // 改用乘法 * 0.5f
+	const double cosDir = cos(direction_rad);
+	const double sinDir = sin(direction_rad);
+	
+	point1 = Point2D(
+		p.getX() - static_cast<int32_t>(halfWidthCm * cosDir + 0.5f),
+		p.getY() - static_cast<int32_t>(halfWidthCm * sinDir + 0.5f)
+	);
+	point2 = Point2D(
+		p.getX() + static_cast<int32_t>(halfWidthCm * cosDir + 0.5f),
+		p.getY() + static_cast<int32_t>(halfWidthCm * sinDir + 0.5f)
+	);
+	updateCachedValues();
 }
 
-double Line2D::crossValue(const Point2D& p) const {
-	const double dx = point2.getX() - point1.getX();
-	const double dy = point2.getY() - point1.getY();
-
-	const double dxp = p.getX() - point1.getX();
-	const double dyp = p.getY() - point1.getY();
-
-	const double cross = dx * dyp - dy * dxp;
-	return cross;
+void Line2D::updateCachedValues() {
+    dx_cm = static_cast<int64_t>(point2.getX()) - point1.getX();
+    dy_cm = static_cast<int64_t>(point2.getY()) - point1.getY();
+    lengthSq_cm2 = dx_cm * dx_cm + dy_cm * dy_cm;
+    length_cm = static_cast<uint32_t>(sqrt(static_cast<double>(lengthSq_cm2)));
 }
 
+void Line2D::setPoint1(const Point2D& p) { 
+    point1 = p;
+    updateCachedValues();
+}
+
+void Line2D::setPoint2(const Point2D& p) { 
+    point2 = p;
+    updateCachedValues();
+}
+
+uint32_t Line2D::distanceToLineCm(const Point2D& p) const {
+    if (lengthSq_cm2 < 1) {
+        return point1.distanceToCm(p);
+    }
+    
+    int64_t cross = crossValue(p);
+    // 快速絕對值 (避免分支預測失敗)
+    uint64_t absCross = (cross >= 0) ? cross : -cross;
+	
+	return static_cast<uint32_t>(absCross / length_cm);
+}
 
 bool Line2D::isPointInInterval(const Point2D& p) const {
-	double dx = point2.getX() - point1.getX();
-	double dy = point2.getY() - point1.getY();
-
-	double px = p.getX() - point1.getX();
-	double py = p.getY() - point1.getY();
-
-	double lenSq = dx * dx + dy * dy;
-
-	if (lenSq == 0) {
-		// Segment is a point, check if p coincides with point1
-		return (px == 0 && py == 0);
+	if (lengthSq_cm2 < 1) {
+		return (p.getX() == point1.getX() && p.getY() == point1.getY());
 	}
-	// Project vector p onto the line vector (dot product)
-	double dot = px * dx + py * dy;
+	
+	const int64_t px = static_cast<int64_t>(p.getX()) - point1.getX();
+	const int64_t py = static_cast<int64_t>(p.getY()) - point1.getY();
 
-	// Check if projection lies between 0 and lenSq (along the segment)
-	if (dot < 0 || dot > lenSq) {
-		return false; // Outside segment bounds
-	}
-	//// Calculate cross product for perpendicular distance squared to line
-	//double cross = px * dy - py * dx;
-	//double distSq = (cross * cross) / lenSq; // Distance squared from point to line
+	// 點積計算
+	const int64_t dot = px * dx_cm + py * dy_cm;
 
-	//// You may define a tolerance for perpendicular distance (e.g., zero or small epsilon)
-	//// Here we assume point must lie exactly on or very close to the line (distance ~ 0)
-	//const double epsilon = 1e-6f;
-	//// Point is inside the interval if it's within tolerance perpendicular distance
-	//return distSq <= epsilon;
-	return true;
+	// 檢查投影是否在 0 和 lengthSq 之間
+	// ESP32 上單一複合條件 (uint64_t 轉換) 可以減少一次分支判斷
+	return static_cast<uint64_t>(dot) <= static_cast<uint64_t>(lengthSq_cm2);
 }
