@@ -17,4 +17,3 @@ private:
 	double convertNMEAToDecimalDegrees(double nmeaCoordinate);
 	void initFromDecimalDegrees(double lat, double lng);
 };
-

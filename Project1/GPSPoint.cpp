@@ -13,7 +13,6 @@ GPSPoint::GPSPoint(double nmeaLat, double nmeaLng)
 	latitude = convertNMEAToDecimalDegrees(nmeaLat);
 	longitude = convertNMEAToDecimalDegrees(nmeaLng);
 
-	// 用 double 精確計算 TM 投影座標
 	double latRad = latitude * DEG_TO_RAD;
 	double lonRad = longitude * DEG_TO_RAD;
 	double deltaLon = lonRad - kCentralMeridian;
@@ -21,9 +20,9 @@ GPSPoint::GPSPoint(double nmeaLat, double nmeaLng)
 	double x_meters = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
 	double y_meters = kScaleFactor * latRad * earthEquRadius;
 	
-	// 轉換成毫米並儲存為 int32_t
-	x_mm = static_cast<int32_t>(x_meters * 1000.0 + 0.5);
-	y_mm = static_cast<int32_t>(y_meters * 1000.0 + 0.5);
+	// 轉換成公分並儲存為 int32_t (避免毫米溢位)
+	x_cm = static_cast<int32_t>(x_meters * 100.0 + 0.5);
+	y_cm = static_cast<int32_t>(y_meters * 100.0 + 0.5);
 }
 
 GPSPoint::GPSPoint(double lat, double lng, bool isDecimalDegrees)
@@ -42,8 +41,8 @@ GPSPoint::GPSPoint(double lat, double lng, bool isDecimalDegrees)
 		double x_meters = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
 		double y_meters = kScaleFactor * latRad * earthEquRadius;
 		
-		x_mm = static_cast<int32_t>(x_meters * 1000.0 + 0.5);
-		y_mm = static_cast<int32_t>(y_meters * 1000.0 + 0.5);
+		x_cm = static_cast<int32_t>(x_meters * 100.0 + 0.5);
+		y_cm = static_cast<int32_t>(y_meters * 100.0 + 0.5);
 	}
 }
 
@@ -76,6 +75,6 @@ void GPSPoint::initFromDecimalDegrees(double lat, double lng)
 	double x_meters = kScaleFactor * deltaLon * earthEquRadius + kFalseEasting;
 	double y_meters = kScaleFactor * latRad * earthEquRadius;
 	
-	x_mm = static_cast<int32_t>(x_meters * 1000.0 + 0.5);
-	y_mm = static_cast<int32_t>(y_meters * 1000.0 + 0.5);
+	x_cm = static_cast<int32_t>(x_meters * 100.0 + 0.5);
+	y_cm = static_cast<int32_t>(y_meters * 100.0 + 0.5);
 }

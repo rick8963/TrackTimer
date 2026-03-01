@@ -75,24 +75,23 @@ TimeMs Track::interpolateCrossingTime(const Point2D& prevPos, const Point2D& cur
     const Line2D& line, TimeMs prevTime, TimeMs currTime,
     int64_t cross1, int64_t cross2) const {
     
-    // 已知 cross1 * cross2 <= 0，表示穿越線段
     if (cross1 * cross2 > 0) {
-        return currTime;  // 不應發生
+        return currTime;
     }
 
-    // 計算到線段的距離（毫米）
-    const uint32_t dist1_mm = line.distanceToLine(prevPos);
-    const uint32_t dist2_mm = line.distanceToLine(currPos);
-    const uint32_t totalDist_mm = dist1_mm + dist2_mm;
+    // 計算到線段的距離（公分）
+    const uint32_t dist1_cm = line.distanceToLineCm(prevPos);
+    const uint32_t dist2_cm = line.distanceToLineCm(currPos);
+    const uint32_t totalDist_cm = dist1_cm + dist2_cm;
     
-    if (totalDist_mm < 1) {
-        return currTime;  // 距離 < 1mm
+    if (totalDist_cm < 1) {
+        return currTime;
     }
 
-    // 計算距離比例（用 float，數值小且精度足夠）
-    const float ratio = static_cast<float>(dist1_mm) / totalDist_mm;
+    // 比例計算
+    const float ratio = static_cast<float>(dist1_cm) / totalDist_cm;
     
-    // 時間計算用整數運算
+    // 時間計算
     const uint32_t timeDiff = currTime - prevTime;
     const uint32_t offset = static_cast<uint32_t>(timeDiff * ratio + 0.5f);
     const TimeMs interpolatedTime = prevTime + offset;
