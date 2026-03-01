@@ -1,19 +1,20 @@
 #pragma once
 #include"Point2D.h"
+
 class GPSPoint : public Point2D
 {
 public:
-	GPSPoint(float nmeaLat, float nmeaLng);
-	GPSPoint(float lat, float lng, bool isDecimalDegrees);
-	float getLatitude() const;
-	float getLongitude() const;
+	GPSPoint(double nmeaLat, double nmeaLng);
+	GPSPoint(double lat, double lng, bool isDecimalDegrees);
+	double getLatitude() const;
+	double getLongitude() const;
 
 private:
 	GPSPoint();
-	float latitude;
-	float longitude;
+	double latitude;   // 保留 double 儲存原始 GPS 精度
+	double longitude;
 	
-	float convertNMEAToDecimalDegrees(float nmeaCoordinate);
-	void initFromDecimalDegrees(float lat, float lng);
+	double convertNMEAToDecimalDegrees(double nmeaCoordinate);
+	void initFromDecimalDegrees(double lat, double lng);
 };
 

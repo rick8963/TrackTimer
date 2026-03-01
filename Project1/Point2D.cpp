@@ -1,12 +1,11 @@
 #include "Point2D.h"
 #include <cmath>
 
-Point2D::Point2D(float inx, float iny) : x(inx), y(iny) {}
-Point2D::Point2D(const Point2D& p) : x(p.x), y(p.y) {}
+Point2D::Point2D(int32_t inx, int32_t iny) : x_mm(inx), y_mm(iny) {}
+Point2D::Point2D(const Point2D& p) : x_mm(p.x_mm), y_mm(p.y_mm) {}
 
-float Point2D::distanceTo(const Point2D& p) const
+uint32_t Point2D::distanceTo(const Point2D& p) const
 {
-    const float dx = x - p.x;
-    const float dy = y - p.y;
-    return sqrtf(dx * dx + dy * dy);  // 使用 sqrtf (float版本)
+    int64_t distSq = distanceSquaredTo(p);
+    return static_cast<uint32_t>(sqrt(static_cast<double>(distSq)));
 }

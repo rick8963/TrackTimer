@@ -39,10 +39,10 @@ private:
     void removeFirstIncompleteLap();
     
     // 計算精確的跨線時間（使用距離內插）
-    // 增加 cross1, cross2 參數以重用已計算的交叉乘積值
+    // cross1, cross2 現為 int64_t
     TimeMs interpolateCrossingTime(const Point2D& prevPos, const Point2D& currPos,
         const Line2D& line, TimeMs prevTime, TimeMs currTime,
-        float cross1, float cross2) const;
+        int64_t cross1, int64_t cross2) const;
 
     std::optional<size_t> currentLapIndex;
     std::vector<Lap> laps;

@@ -54,14 +54,14 @@ bool Track::passSector(unsigned int i, TimeMs timestamp) {
     if (!sector->isPointInInterval(lastPos) && !sector->isPointInInterval(currentPos)) return false;
     
     // 計算交叉乘積，檢查是否穿越線段
-    const float cross1 = sector->crossValue(lastPos);
-    const float cross2 = sector->crossValue(currentPos);
+    const int64_t cross1 = sector->crossValue(lastPos);
+    const int64_t cross2 = sector->crossValue(currentPos);
     
     if (cross1 * cross2 > 0) return false;  // 同側，未穿越
     
     if (!currentLapIndex.has_value()) return true;
 
-    // 使用內插計算精確通過時間（重用 cross1, cross2 的結果）
+    // 使用內插計算精確通過時間
     TimeMs accurateTime = interpolateCrossingTime(lastPos, currentPos, *sector, 
                                                    lastTimestamp, timestamp, cross1, cross2);
     lastCrossingTime = accurateTime;
@@ -73,26 +73,26 @@ bool Track::passSector(unsigned int i, TimeMs timestamp) {
 
 TimeMs Track::interpolateCrossingTime(const Point2D& prevPos, const Point2D& currPos,
     const Line2D& line, TimeMs prevTime, TimeMs currTime,
-    float cross1, float cross2) const {
+    int64_t cross1, int64_t cross2) const {
     
     // 已知 cross1 * cross2 <= 0，表示穿越線段
     if (cross1 * cross2 > 0) {
         return currTime;  // 不應發生
     }
 
-    // 計算到線段的距離
-    const float dist1 = line.distanceToLine(prevPos);
-    const float dist2 = line.distanceToLine(currPos);
-    const float totalDist = dist1 + dist2;
+    // 計算到線段的距離（毫米）
+    const uint32_t dist1_mm = line.distanceToLine(prevPos);
+    const uint32_t dist2_mm = line.distanceToLine(currPos);
+    const uint32_t totalDist_mm = dist1_mm + dist2_mm;
     
-    if (totalDist < 1e-6f) {
-        return currTime;  // 距離太小
+    if (totalDist_mm < 1) {
+        return currTime;  // 距離 < 1mm
     }
 
-    // 計算距離比例（用 float）
-    const float ratio = dist1 / totalDist;
+    // 計算距離比例（用 float，數值小且精度足夠）
+    const float ratio = static_cast<float>(dist1_mm) / totalDist_mm;
     
-    // 時間計算用整數運算，避免精度損失
+    // 時間計算用整數運算
     const uint32_t timeDiff = currTime - prevTime;
     const uint32_t offset = static_cast<uint32_t>(timeDiff * ratio + 0.5f);
     const TimeMs interpolatedTime = prevTime + offset;
