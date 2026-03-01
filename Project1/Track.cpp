@@ -89,10 +89,13 @@ TimeMs Track::interpolateCrossingTime(const Point2D& prevPos, const Point2D& cur
         return currTime;  // 距離太小
     }
 
-    // 線性內插比例
+    // 計算距離比例（用 float）
     const float ratio = dist1 / totalDist;
-    const float timeDiff = static_cast<float>(currTime - prevTime);
-    const TimeMs interpolatedTime = prevTime + static_cast<TimeMs>(timeDiff * ratio + 0.5f);
+    
+    // 時間計算用整數運算，避免精度損失
+    const uint32_t timeDiff = currTime - prevTime;
+    const uint32_t offset = static_cast<uint32_t>(timeDiff * ratio + 0.5f);
+    const TimeMs interpolatedTime = prevTime + offset;
 
     return interpolatedTime;
 }
