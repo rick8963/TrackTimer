@@ -5,7 +5,7 @@ static TimeMs adjustTimeForMidnight(TimeMs currentTime, TimeMs lastTime) {
     const TimeMs ONE_DAY = 24u * 60u * 60u * 1000u;
 
     if (lastTime > 0 && lastTime > currentTime && (lastTime - currentTime) > HALF_DAY) {
-        return currentTime + ONE_DAY;
+        return currentTime + ONE_DAY; // 加法效能較高
     }
     return currentTime;
 }
@@ -51,17 +51,23 @@ Track::Track(vector<Line2D> nds, bool isCircuit) :
 bool Track::passSector(unsigned int i, TimeMs timestamp) {
     if (i >= nodes.size()) return false;
     Line2D* sector = &nodes.at(i);
-    if (!sector->isPointInInterval(lastPos) && !sector->isPointInInterval(currentPos)) return false;
     
-    // 計算交叉乘積，檢查是否穿越線段
+    // 快速過濾：如果上一個點和當前點都不在區間內，直接放棄
+    if (!sector->isPointInInterval(lastPos) && !sector->isPointInInterval(currentPos)) {
+        return false;
+    }
+    
     const int64_t cross1 = sector->crossValue(lastPos);
     const int64_t cross2 = sector->crossValue(currentPos);
     
-    if (cross1 * cross2 > 0) return false;  // 同側，未穿越
+    // 使用 XOR 檢查符號是否不同 (最高位是否不同)
+    // 由於 0 乘以任何數都是 0，這裡用大於 0 來確保兩者同號（都在同一側）
+    if (cross1 * cross2 > 0) {
+        return false;
+    }
     
     if (!currentLapIndex.has_value()) return true;
 
-    // 使用內插計算精確通過時間
     TimeMs accurateTime = interpolateCrossingTime(lastPos, currentPos, *sector, 
                                                    lastTimestamp, timestamp, cross1, cross2);
     lastCrossingTime = accurateTime;
@@ -75,10 +81,6 @@ TimeMs Track::interpolateCrossingTime(const Point2D& prevPos, const Point2D& cur
     const Line2D& line, TimeMs prevTime, TimeMs currTime,
     int64_t cross1, int64_t cross2) const {
     
-    if (cross1 * cross2 > 0) {
-        return currTime;
-    }
-
     // 計算到線段的距離（公分）
     const uint32_t dist1_cm = line.distanceToLineCm(prevPos);
     const uint32_t dist2_cm = line.distanceToLineCm(currPos);
@@ -88,15 +90,13 @@ TimeMs Track::interpolateCrossingTime(const Point2D& prevPos, const Point2D& cur
         return currTime;
     }
 
-    // 比例計算
-    const float ratio = static_cast<float>(dist1_cm) / totalDist_cm;
-    
-    // 時間計算
+    // 全整數計算內插，避免 float 轉換與除法
+    // offset = timeDiff * dist1 / totalDist
     const uint32_t timeDiff = currTime - prevTime;
-    const uint32_t offset = static_cast<uint32_t>(timeDiff * ratio + 0.5f);
-    const TimeMs interpolatedTime = prevTime + offset;
+    // 使用 uint64_t 避免 timeDiff * dist1_cm 溢位
+    const uint32_t offset = static_cast<uint32_t>(((static_cast<uint64_t>(timeDiff) * dist1_cm) + (totalDist_cm >> 1)) / totalDist_cm);
 
-    return interpolatedTime;
+    return prevTime + offset;
 }
 
 unsigned int Track::getSectorCount() const {
@@ -169,7 +169,8 @@ void Track::updatePos(Point2D& pos, TimeMs timestamp) {
     lastPos = currentPos;
     currentPos = pos;
 
-    TimeMs currentTimestamp = timestamp;
+    // 緩存常用變數避免重複呼叫
+    const TimeMs currentTimestamp = timestamp;
 
     if (passSector(0, currentTimestamp)) {
         bool completedFullLap = (currentLapIndex.has_value() && currentSector == sectorCount - 1);
