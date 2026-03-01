@@ -2,18 +2,18 @@
 class Point2D
 {
 public:
-    Point2D(float inx = 0.0, float iny = 0.0);
+    Point2D(double inx = 0.0, double iny = 0.0);
     Point2D(const Point2D& p);
 
-    virtual float getX() const;
-    virtual float getY() const;
+    virtual double getX() const;
+    virtual double getY() const;
 
-    void setX(float inx);
-    void setY(float iny);
+    void setX(double inx);
+    void setY(double iny);
 
-    float distanceTo(const Point2D& p) const;  // in meters.
+    double distanceTo(const Point2D& p) const;  // in meters.
     
 protected:
-    float x;
-    float y;
+    double x;
+    double y;
 };

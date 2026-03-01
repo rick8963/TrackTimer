@@ -1,22 +1,23 @@
 #pragma once
-#include<vector>
-#include<ctime>
+#include <vector>
 #include <optional>
-#include"Sector.h"
+#include "Sector.h"
+
+using TimeMs = uint32_t; // 或用 uint64_t 若擔心 session >49 天
 
 class Lap {
 public:
     Lap(int numSectors);
-    Lap(int numSectors, clock_t startTime);
-    bool start(clock_t t);
-    bool stop(clock_t t);
-    bool setSectorTime(unsigned int index, clock_t t);
-    clock_t getLapTime() const;
-    std::optional<clock_t> getSectorTime(unsigned int index) const;
+    Lap(int numSectors, TimeMs startTime);
+    bool start(TimeMs t);
+    bool stop(TimeMs t);
+    bool setSectorTime(unsigned int index, TimeMs t);
+    TimeMs getLapTime() const;
+    std::optional<TimeMs> getSectorTime(unsigned int index) const;
 
 private:
-    clock_t lapStartTime;
-    clock_t lapEndTime;
+    TimeMs lapStartTime;
+    TimeMs lapEndTime;
     unsigned short sectorCount;
-    std::vector<std::optional<clock_t>> sectorTimes;
+    std::vector<std::optional<TimeMs>> sectorTimes;
 };
