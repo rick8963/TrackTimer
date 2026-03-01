@@ -3,17 +3,17 @@
 class GPSPoint : public Point2D
 {
 public:
-	GPSPoint(double nmeaLat, double nmeaLng);
-	GPSPoint(double lat, double lng, bool isDecimalDegrees);
-	double getLatitude();
-	double getLongitude();
+	GPSPoint(float nmeaLat, float nmeaLng);
+	GPSPoint(float lat, float lng, bool isDecimalDegrees);
+	float getLatitude() const;
+	float getLongitude() const;
 
 private:
 	GPSPoint();
-	double latitude;
-	double longitude;
+	float latitude;
+	float longitude;
 	
-	double convertNMEAToDecimalDegrees(double nmeaCoordinate);
-	void initFromDecimalDegrees(double lat, double lng);
+	float convertNMEAToDecimalDegrees(float nmeaCoordinate);
+	void initFromDecimalDegrees(float lat, float lng);
 };
 
