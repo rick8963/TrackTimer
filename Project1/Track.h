@@ -35,6 +35,8 @@ private:
     bool passSector(unsigned int i, TimeMs timestamp);
     void nextLap(TimeMs timestamp);
     bool isAllSectorsPassed() const;
+    bool firstLapCompleted;
+    void removeFirstIncompleteLap();
     // 計算精確的跨線時間（使用距離內插）
     TimeMs interpolateCrossingTime(const Point2D& prevPos, const Point2D& currPos,
         const Line2D& line, TimeMs prevTime, TimeMs currTime) const;

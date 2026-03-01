@@ -21,7 +21,8 @@ Track::Track() :
     bestLapTime(0),
     latestLapTime(0),
     lastTimestamp(0),
-    lastCrossingTime(0)
+    lastCrossingTime(0),
+    firstLapCompleted(false)
 {}
 
 Track::Track(vector<Line2D> nds, bool isCircuit) :
@@ -36,7 +37,8 @@ Track::Track(vector<Line2D> nds, bool isCircuit) :
     bestLapTime(0),
     latestLapTime(0),
     lastTimestamp(0),
-    lastCrossingTime(0)
+    lastCrossingTime(0),
+    firstLapCompleted(false)
 {
     for (int i = 0; i < sectorCount - 1; i++) {
         sectors.push_back(Sector(i, i + 1));
@@ -107,6 +109,18 @@ bool Track::isAllSectorsPassed() const {
     return true;
 }
 
+void Track::removeFirstIncompleteLap() {
+    if (firstLapCompleted) return;
+
+    firstLapCompleted = true;
+    if (laps.empty()) return;
+
+    laps.erase(laps.begin());
+    if (currentLapIndex.has_value() && currentLapIndex.value() > 0) {
+        currentLapIndex = currentLapIndex.value() - 1;
+    }
+}
+
 void Track::nextLap(TimeMs timestamp) {
     if (currentLapIndex.has_value()) {
         Lap& prevLap = laps[currentLapIndex.value()];
@@ -153,14 +167,19 @@ void Track::updatePos(Point2D& pos, TimeMs timestamp) {
     TimeMs currentTimestamp = timestamp;
 
     if (passSector(0, currentTimestamp)) {
-        if (currentLapIndex.has_value() && currentSector == sectorCount - 1) {
+        bool completedFullLap = (currentLapIndex.has_value() && currentSector == sectorCount - 1);
+
+        if (completedFullLap) {
+            // 標記分段通過
             if (currentSector < sectors.size()) {
                 sectors[currentSector].pass();
             }
             lastLapValid = isAllSectorsPassed();
+
+            // 移除首次不完整的圈
+            removeFirstIncompleteLap();
         }
 
-        // 使用 passSector 中計算的精確跨線時間
         nextLap(lastCrossingTime);
         currentSector = 0;
         lastTimestamp = timestamp;
