@@ -46,4 +46,5 @@ private:
     TimeMs bestLapTime;
     TimeMs latestLapTime;
     TimeMs lastTimestamp;
+    TimeMs lastCrossingTime;
 };

@@ -101,14 +101,14 @@ int main() {
             Line2D curSector = TKS.getNextCheckpoint();
             const vector<Sector>& sectors = TKS.getSectors();
 
-            cout << "current pos (" << currentPos.getX() << ", " << currentPos.getY()
+            /*cout << "current pos (" << currentPos.getX() << ", " << currentPos.getY()
                 << ") at sector " << TKS.getCurrentSectorCount() + 1
                 << "\n" << curSector.distanceToLine(currentPos)
                 << " meters to next checkpoint ("
                 << curSector.getPoint1().getX() << ", " << curSector.getPoint1().getY()
                 << "), ("
                 << curSector.getPoint2().getX() << ", " << curSector.getPoint2().getY()
-                << ")\n";
+                << ")\n";*/
 
             //cout << "\n=== Sector Status ===\n";
             //for (const auto& sector : TKS.getSectors()) {

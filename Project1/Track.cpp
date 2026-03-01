@@ -20,7 +20,8 @@ Track::Track() :
     sessionEndTime(0),
     bestLapTime(0),
     latestLapTime(0),
-    lastTimestamp(0)
+    lastTimestamp(0),
+    lastCrossingTime(0)
 {}
 
 Track::Track(vector<Line2D> nds, bool isCircuit) :
@@ -34,7 +35,8 @@ Track::Track(vector<Line2D> nds, bool isCircuit) :
     sessionEndTime(0),
     bestLapTime(0),
     latestLapTime(0),
-    lastTimestamp(0)
+    lastTimestamp(0),
+    lastCrossingTime(0)
 {
     for (int i = 0; i < sectorCount - 1; i++) {
         sectors.push_back(Sector(i, i + 1));
@@ -53,9 +55,10 @@ bool Track::passSector(unsigned int i, TimeMs timestamp) {
 
     // 使用內插計算精確通過時間
     TimeMs accurateTime = interpolateCrossingTime(lastPos, currentPos, *sector, lastTimestamp, timestamp);
+    lastCrossingTime = accurateTime; // 記錄精確時間
 
     Lap& lap = laps[currentLapIndex.value()];
-    lap.setSectorTime(currentSector, accurateTime);  // 使用內插後的時間
+    lap.setSectorTime(currentSector, accurateTime);
     return true;
 }
 
@@ -83,9 +86,8 @@ TimeMs Track::interpolateCrossingTime(const Point2D& prevPos, const Point2D& cur
 
     double ratio = dist1 / totalDist;
 
-    // 根據距離比例內插時間
-    TimeMs timeDiff = currTime - prevTime;
-    TimeMs interpolatedTime = prevTime + static_cast<TimeMs>(timeDiff * ratio);
+    double timeDiff = static_cast<double>(currTime - prevTime);
+    TimeMs interpolatedTime = prevTime + static_cast<TimeMs>(timeDiff * ratio + 0.5); // +0.5 做四捨五入
 
     return interpolatedTime;
 }
@@ -147,31 +149,38 @@ void Track::updatePos(Point2D& pos, TimeMs timestamp) {
 
     lastPos = currentPos;
     currentPos = pos;
-    lastTimestamp = timestamp;
 
-    if (passSector(0, timestamp)) {
+    TimeMs currentTimestamp = timestamp;
+
+    if (passSector(0, currentTimestamp)) {
         if (currentLapIndex.has_value() && currentSector == sectorCount - 1) {
-            Lap& lap = laps[currentLapIndex.value()];
-            lap.setSectorTime(sectorCount - 1, timestamp);
             if (currentSector < sectors.size()) {
                 sectors[currentSector].pass();
             }
         }
 
         lastLapValid = isAllSectorsPassed();
-        nextLap(timestamp);
+
+        // 使用 passSector 中計算的精確跨線時間
+        nextLap(lastCrossingTime);
         currentSector = 0;
+        lastTimestamp = timestamp;
         return;
     }
 
-    if (currentSector == sectorCount - 1) return;
+    if (currentSector == sectorCount - 1) {
+        lastTimestamp = timestamp;
+        return;
+    }
 
-    if (passSector(currentSector + 1, timestamp)) {
+    if (passSector(currentSector + 1, currentTimestamp)) {
         if (currentSector < sectors.size()) {
             sectors[currentSector].pass();
         }
         currentSector++;
     }
+
+    lastTimestamp = timestamp;
 }
 
 const std::vector<Lap>& Track::getLaps() const {
