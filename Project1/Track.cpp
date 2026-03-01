@@ -157,9 +157,8 @@ void Track::updatePos(Point2D& pos, TimeMs timestamp) {
             if (currentSector < sectors.size()) {
                 sectors[currentSector].pass();
             }
+            lastLapValid = isAllSectorsPassed();
         }
-
-        lastLapValid = isAllSectorsPassed();
 
         // 使用 passSector 中計算的精確跨線時間
         nextLap(lastCrossingTime);
