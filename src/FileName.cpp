@@ -1,14 +1,25 @@
 #include <Arduino.h>
-#include <SPIFFS.h>
 #include "Track.h"
 #include "GPSPoint.h"
-#include "../lib/StorageManager.h"
-#include "../lib/GpsTimeParser.h"
-#include "../lib/GpsReceiver.h"
-#include "../lib/WebInterface.h"
-#include "../lib/DisplayManager.h"
-#include "../lib/StatusLED.h"
+#include "StorageManager.h"
+#include "GpsTimeParser.h"
+#include "GpsReceiver.h"
+#include "WebInterface.h"
+#include "DisplayManager.h"
+#include "StatusLED.h"
 #include "Config.h"
+
+std::vector<Line2D> buildTKS() {
+    std::vector<Line2D> sectors;
+    sectors.push_back(Line2D(GPSPoint(22.742248, 120.322181, true), 0, 20));
+    sectors.push_back(Line2D(GPSPoint(22.742798, 120.321496, true), 180, 20));
+    sectors.push_back(Line2D(GPSPoint(22.742724, 120.322010, true), 180, 20));
+    sectors.push_back(Line2D(GPSPoint(22.742285, 120.321387, true), 60, 20));
+    sectors.push_back(Line2D(GPSPoint(22.742540, 120.321959, true), 88, 20));
+    sectors.push_back(Line2D(GPSPoint(22.741863, 120.321912, true), 262, 20));
+    sectors.push_back(Line2D(GPSPoint(22.741763, 120.321930, true), 81, 20));
+    return sectors;
+}
 
 // 全域物件
 StorageManager g_storage(STORAGE_FS);
@@ -21,12 +32,18 @@ Track track(buildTKS(), true);
 
 // 狀態變數
 int lineCount = 0;
-uint32_t firstTimestamp = 0;
 bool g_storageReady = false;
 bool g_logFileOpened = false;
-bool g_replayMode = true;  // true=檔案回放, false=即時GPS
-File nmeaFile;
 
+String msToLapTime(TimeMs ms) {
+    if (ms == 0) return "00:00.0";
+    TimeMs minutes = ms / 60000;
+    TimeMs seconds = (ms % 60000) / 1000;
+    TimeMs millis = ms % 1000 / 10;
+    char buf[9];
+    snprintf(buf, sizeof(buf), "%02u:%02u.%u", minutes, seconds, (unsigned)millis);
+    return String(buf);
+}
 LapInfo trackToLapInfo(const Track& track) {
     LapInfo lap;
     if (track.getLaps().empty()) {
@@ -52,100 +69,42 @@ LapInfo trackToLapInfo(const Track& track) {
     return lap;
 }
 
-String msToLapTime(TimeMs ms) {
-    if (ms == 0) return "00:00.0";
-    TimeMs minutes = ms / 60000;
-    TimeMs seconds = (ms % 60000) / 1000;
-    TimeMs millis = ms % 1000 / 10;
-    char buf[9];
-    snprintf(buf, sizeof(buf), "%02u:%02u.%u", minutes, seconds, (unsigned)millis);
-    return String(buf);
-}
 
 void handleNmeaLine(const String &line);  // 前置聲明
 void setupWiFiAP();
-void printResults();
 
-std::vector<Line2D> buildTKS() {
-    std::vector<Line2D> sectors;
-    sectors.push_back(Line2D(GPSPoint(22.742248, 120.322181, true), 0, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742798, 120.321496, true), 180, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742724, 120.322010, true), 180, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742285, 120.321387, true), 60, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742540, 120.321959, true), 88, 20));
-    sectors.push_back(Line2D(GPSPoint(22.741863, 120.321912, true), 262, 20));
-    sectors.push_back(Line2D(GPSPoint(22.741763, 120.321930, true), 81, 20));
-    return sectors;
-}
 void setup() {
     Serial.begin(115200);
-    delay(2000);
-    
-    Serial.println("\n=== ESP32 TrackTimer v2.0 ===");
-    Serial.println("完全取代 Qstarz 賽道計時器");
-    
-    // 1. SPIFFS 初始化
-    if (!SPIFFS.begin(true)) {
-        Serial.println("❌ SPIFFS mount failed");
-        return;
-    }
-    Serial.printf("✅ SPIFFS: %d total, %d used\n", 
-        SPIFFS.totalBytes(), SPIFFS.usedBytes());
-    
-    // 檢查 TKS.nmea
-    nmeaFile = SPIFFS.open("/TKS.nmea", "r");
-    if (!nmeaFile || nmeaFile.size() == 0) {
-        Serial.println("⚠️ TKS.nmea not found, GPS live mode");
-        g_replayMode = false;
-    } else {
-        Serial.printf("✅ TKS.nmea: %d bytes\n", nmeaFile.size());
-        g_replayMode = true;
-    }
-    
-    // 2. StorageManager
+  delay(1000);
+  Serial.println("\n=== ESP32 GPS NMEA Logger ===");
+
+  if (!STORAGE_FS.begin(true)) {
+    Serial.println("[Storage] SPIFFS mount failed");
+    g_storageReady = false;
+  } else {
     g_storageReady = g_storage.begin();
-    // if (g_storageReady) {
-    //     g_storage.listFiles();  // 顯示現有 logs
-    // }
-    
-    // 3. GPS Receiver（即時模式）
-    if (!g_replayMode) {
-        g_gpsReceiver.begin(GPS_BAUD_RATE);
-        g_gpsReceiver.onLine(handleNmeaLine);
-    }
-    
-    // 4. WiFi AP + Web
-    setupWiFiAP();
-    g_web.begin();
-    
-    // 5. Display + LED
-    g_display.begin();
-    g_statusLED.begin();
-    
-    Serial.println("🚀 TrackTimer ready!");
+  }
+
+  g_gpsReceiver.begin(GPS_BAUD_RATE);
+  g_gpsReceiver.onLine(handleNmeaLine);
+
+  setupWiFiAP();
+  g_web.begin();
+
+  Serial.println("[Setup] Completed");
+  g_statusLED.begin();
+  g_display.begin();
 }
 
 void loop() {
     uint32_t loopStart = millis();
     
-    // 1. 處理 NMEA 輸入（統一入口）
-    bool gpsActive = false;
-    if (g_replayMode) {
-        if (nmeaFile.available()) {
-            String line = nmeaFile.readStringUntil('\n');
-            line.trim();
-            lineCount++;
-            handleNmeaLine(line);
-            gpsActive = true;
-        }
-    } else {
-        gpsActive = g_gpsReceiver.loop();
-    }
+    bool gpsActive = g_gpsReceiver.loop();
     
-    // 2. Web 服務
+    // Web 服務
     g_web.handleClient();
     
-    // 3. 狀態更新（每100ms）
+    // 狀態更新（每100ms）
     static uint32_t lastStatus = 0;
     if (millis() - lastStatus > 100) {
         bool wifiActive = WiFi.softAPgetStationNum() > 0;
@@ -156,9 +115,8 @@ void loop() {
             wifiActive, sseActive, false
         );
         
-        // Display 更新（Track → LapInfo）
         LapInfo lap = trackToLapInfo(track);
-        GpsData gps;  // 簡化，之後從 parser 取
+        GpsData gps = g_timeParser.currentGps();
         DateTimeInfo time = g_timeParser.current();
         
         g_display.update(
@@ -168,75 +126,33 @@ void loop() {
         );
         
         lastStatus = millis();
-    }
+    }   
     
-    // 4. Replay 結束檢查
-    if (g_replayMode && nmeaFile.available() == 0) {
-        printResults();
-        g_storage.closeCurrentFile();
-        while(1) { 
-            g_web.handleClient();
-            delay(100);
-        }
-    }
-    
-    // 5. 避免 WDT
+    // 避免 WDT
     if (millis() - loopStart > 50) {
         Serial.printf("⚠️ Loop overrun: %dms\n", millis() - loopStart);
     }
 }
 
 void handleNmeaLine(const String &line) {
-    // 1. Time parser
-    g_timeParser.processLine(line);
-    
-    // 2. GPRMC 解析 → Track 更新（核心！）
-    double lat, lon;
-    uint32_t timestamp;
-    if (parseGPRMC(line.c_str(), lat, lon, timestamp)) {
-        GPSPoint pos(lat, lon, true);
-        track.updatePos(pos, timestamp);
-        
-        // 3. Web live view
-        g_web.pushNmeaLine(line);
-        
-        // 4. 自動開 log
-        if (!g_logFileOpened && g_timeParser.hasValidTime() && g_storageReady) {
-            DateTimeInfo t = g_timeParser.current();
-            String path = g_storage.createNewLogFile(t);
-            if (path.length() > 0) g_logFileOpened = true;
-        }
-        
-        // 5. Log append
-        if (g_logFileOpened) {
-            String logLine = String(timestamp) + "," + 
-                           String(lat,6) + "," + String(lon,6) + "," +
-                           String(track.getCurrentSectorCount()+1) + "," +
-                           String(track.getLaps().size());
-            g_storage.appendLine(logLine);
-        }
-    }
-}
+  g_timeParser.processLine(line);
 
-void printResults() {
-    Serial.println("\n=== FINAL RESULTS ===");
-    Serial.printf("Lines: %d\n", lineCount);
-    Serial.printf("Total Laps: %d\n", track.getLaps().size());
-    if (!track.getLaps().empty()) {
-        Serial.printf("Best: %.3f s\n", track.getBestLapTime() / 1000.0f);
-        Serial.printf("Latest: %.3f s\n", track.getLatestLapTime() / 1000.0f);
-        
-        Serial.println("\nLAP DETAILS:");
-        for (size_t i = 0; i < track.getLaps().size(); i++) {
-            const auto& lap = track.getLaps()[i];
-            Serial.printf("Lap %zu: %.3f s\n", i+1, lap.getLapTime() / 1000.0f);
-            for (uint8_t s = 0; s < track.getSectorCount(); s++) {
-                if (lap.hasSectorTime(s)) {
-                    Serial.printf("  S%d: %.3f s\n", s+1, lap.getSectorTime(s) / 1000.0f);
-                }
-            }
-        }
-    }
+  // Push to live view buffer (always, regardless of storage state)
+  g_web.pushNmeaLine(line);
+
+  if (!g_logFileOpened && g_timeParser.hasValidTime() && g_storageReady) {
+    DateTimeInfo t = g_timeParser.current();
+    String path = g_storage.createNewLogFile(t);
+    if (path.length() > 0) g_logFileOpened = true;
+  }
+
+  if (!g_logFileOpened && g_storageReady && !g_timeParser.hasValidTime()) {
+    DateTimeInfo dummy;
+    String path = g_storage.createNewLogFile(dummy);
+    if (path.length() > 0) g_logFileOpened = true;
+  }
+
+  if (g_logFileOpened) g_storage.appendLine(line);
 }
 
 void setupWiFiAP() {
