@@ -363,3 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 /Project1/TKS.nmea
 *.rcz
+
+.pio/
+.vscode/
+*.nmea
