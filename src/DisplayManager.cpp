@@ -129,21 +129,68 @@ void DisplayManager::update(
 }
 
 void DisplayManager::drawTrackMode(const GpsData &gps, const LapInfo &lap) {
-    u8g2.setFont(u8g2_font_logisoso20_tn);
-    snprintf(displayBuf, sizeof(displayBuf), "%2d", (int)_gpsData.speedKmh);
-    u8g2.drawStr(0, 24, displayBuf);
+    char buf[32];
+
+    u8g2.drawFrame(0, 0, 128, 64);
+
+    // =========================
+    // Main current lap block
+    // =========================
+    u8g2.drawFrame(0, 0, 128, 28);
+    drawInvertedLabel(u8g2, 1, 1, 20, 8, "CUR");
+
+    u8g2.setFont(u8g2_font_logisoso16_tn);
+    u8g2.drawStr(24, 18, lap.currentLap.c_str());
+
+    // Current lap number + DEL under CUR
+    u8g2.setFont(u8g2_font_5x7_tf);
+    snprintf(buf, sizeof(buf), "#%d  DEL %s", lap.currentLapNum, lap.deltaStr.c_str());
+    u8g2.drawStr(4, 26, buf);
+
+    // =========================
+    // LAST block
+    // =========================
+    u8g2.drawFrame(0, 28, 64, 28);
+    drawInvertedLabel(u8g2, 1, 29, 24, 8, "LAST");
 
     u8g2.setFont(u8g2_font_6x10_tf);
-    u8g2.drawStr(52, 24, "km/h");
+    u8g2.drawStr(6, 45, lap.lastLap.c_str());
 
-    snprintf(displayBuf, sizeof(displayBuf), "SAT:%d FIX:%d", _gpsData.satCount, _gpsData.fixType);
-    u8g2.drawStr(0, 40, displayBuf);
+    u8g2.setFont(u8g2_font_5x7_tf);
+    snprintf(buf, sizeof(buf), "#%d", lap.lastLapNum);
+    u8g2.drawStr(46, 54, buf);
 
-    snprintf(displayBuf, sizeof(displayBuf), "LAP:%s", _lapInfo.currentLap.c_str());
-    u8g2.drawStr(0, 52, displayBuf);
+    // =========================
+    // BEST block
+    // =========================
+    u8g2.drawFrame(64, 28, 64, 28);
+    drawInvertedLabel(u8g2, 65, 29, 24, 8, "BEST");
 
-    snprintf(displayBuf, sizeof(displayBuf), "BEST:%s", _lapInfo.bestLap.c_str());
-    u8g2.drawStr(0, 64, displayBuf);
+    u8g2.setFont(u8g2_font_6x10_tf);
+    u8g2.drawStr(70, 45, lap.bestLap.c_str());
+
+    u8g2.setFont(u8g2_font_5x7_tf);
+    snprintf(buf, sizeof(buf), "#%d", lap.bestLapNum);
+    u8g2.drawStr(110, 54, buf);
+
+    // =========================
+    // Bottom status bar
+    // =========================
+    u8g2.drawFrame(0, 56, 128, 8);
+    u8g2.setFont(u8g2_font_4x6_tf);
+
+    const char *fixStr = "NO";
+    if (gps.fixType == 2) fixStr = "2D";
+    else if (gps.fixType == 3) fixStr = "3D";
+    else if (gps.fixType > 0) fixStr = "FX";
+
+    snprintf(buf, sizeof(buf), "SPD%3d SAT%02d %s LAP%d/%d",
+         (int)gps.speedKmh,
+         gps.satCount,
+         fixStr,
+         lap.currentLapNum,
+         lap.totalLaps);
+    u8g2.drawStr(2, 63, buf);
 }
 
 void DisplayManager::drawDebugMode() {

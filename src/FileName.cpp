@@ -52,6 +52,7 @@ LapInfo trackToLapInfo(const Track& track) {
     } else {
         const auto& latestLap = track.getLaps().back();
         lap.currentLapNum = track.getLaps().size();
+        lap.lastLapNum = lap.currentLapNum == 0 ? 0 : lap.currentLapNum;
         lap.totalLaps = track.getLaps().size();
         
         // Current lap (未完成)
@@ -61,6 +62,9 @@ LapInfo trackToLapInfo(const Track& track) {
         
         // Best lap
         lap.bestLap = msToLapTime(track.getBestLapTime());
+
+        // Lastest lap
+        lap.lastLap =  msToLapTime(track.getLatestLapTime());
         
         // Delta (未完成)
         lap.deltaStr = "+0.123";

@@ -64,10 +64,13 @@ struct GpsData {
 
 struct LapInfo {
   String currentLap = "00:00.0";    // "01:23.456"
+  String lastLap = "00:00.0";
   String bestLap = "00:00.0";
   String deltaStr = "+0.000";       // 差距
   float deltaSeconds = 0;           // 正=快，負=慢
   int currentLapNum = 0;
+  int lastLapNum = 0;
+  int bestLapNum = 0;
   int totalLaps = 0;
 };
 
