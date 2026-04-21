@@ -14,7 +14,7 @@ bool GpsReceiver::loop() {
   bool activity = false;
   while (GPS_SERIAL.available() > 0) {
     char c = static_cast<char>(GPS_SERIAL.read());
-    Serial.write(c);
+    // Serial.write(c);
     activity = true;
     lastData = millis();
 

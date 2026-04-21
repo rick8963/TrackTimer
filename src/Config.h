@@ -15,6 +15,7 @@ static const uint32_t GPS_BAUD_RATE = 115200;
 
 static const int NUM_LEDS = 8;
 static const int STATUS_LED_PIN = 7;
+static const int RECORD_BUTTON_PIN = 12;
 
 static const char *AP_SSID = "ESP32_GPS_LOGGER";  
 static const char *AP_PASSWORD = "12345678";
