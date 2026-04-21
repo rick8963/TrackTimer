@@ -120,7 +120,7 @@ void loop() {
     uint32_t now = millis();
     int reading = digitalRead(g_buttonPin);
     if (reading != g_recordButtonState)g_lastButtonChange = now;
-    if ((now - g_lastButtonChange) > 500) {
+    if ((now - g_lastButtonChange) < 500) {
         if (reading == LOW && g_recordButtonState == HIGH) {
             Serial.println("DEBUG: REAL BUTTON PRESSED!");
 
