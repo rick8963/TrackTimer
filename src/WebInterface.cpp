@@ -133,7 +133,7 @@ void WebInterface::handleLiveSSE() {
 void WebInterface::handleRoot() {
   std::vector<FileInfo> files = _storage.listLogFiles();
 
-  const size_t SPIFFS_SIZE = 0x360000;
+  const size_t SPIFFS_SIZE = 0xDF0000;
   size_t usedBytes = 0;
   for (const auto &f : files) {
     usedBytes += f.size;
