@@ -39,6 +39,12 @@ bool g_recordButtonState = false;   // 按鈕上一次讀到的狀態
 uint32_t g_lastButtonChange = 0;      // 上一次按鈕狀態變化的時間
 uint8_t g_buttonPin = RECORD_BUTTON_PIN;
 
+bool g_wifiOn = true;                     // 一開始 WiFi 開啟
+bool g_wifiArmed = true;                  // 是否允許使用 WiFi（按鈕控制）
+bool g_wifiButtonState = false;           // WiFi 按鈕上次的狀態
+uint32_t g_lastWifiButtonChange = 0;      // 上次 WiFi 按鈕變化時間
+uint8_t g_wifiButtonPin = WIFI_BUTTON_PIN;
+
 String msToLapTime(TimeMs ms) {
     if (ms == 0) return "00:00.0";
     TimeMs minutes = ms / 60000;
@@ -104,6 +110,10 @@ void setup() {
     g_lastButtonChange = millis();
     g_recordArmed = false;
 
+    pinMode(g_wifiButtonPin, INPUT_PULLUP);
+    g_wifiButtonState = digitalRead(g_wifiButtonPin);
+    g_lastWifiButtonChange = millis();
+
     Serial.println("[Setup] Completed");
     g_statusLED.begin();
     g_display.begin();
@@ -139,11 +149,40 @@ void loop() {
         }
         g_recordButtonState = reading;
     }
+
+    int wifiReading = digitalRead(g_wifiButtonPin);
+    if (wifiReading != g_wifiButtonState) {
+        g_lastWifiButtonChange = now;
+    }
+    if ((now - g_lastWifiButtonChange) < 500) {
+        if (wifiReading == LOW && g_wifiButtonState == HIGH) {
+            Serial.println("DEBUG: WIFI BUTTON PRESSED!");
+            g_wifiArmed = !g_wifiArmed;
+
+            if (g_wifiArmed) {
+                // 重新開啟 WiFi AP
+                WiFi.mode(WIFI_AP);
+                bool ok = WiFi.softAP(AP_SSID, AP_PASSWORD);
+                if (!ok) {
+                    Serial.println("❌ WiFi AP restart failed");
+                } else {
+                    IPAddress ip = WiFi.softAPIP();
+                    Serial.printf("📶 WiFi AP restarted: %s @ %s\n", AP_SSID, ip.toString().c_str());
+                }
+            } else {
+                // 關閉 WiFi
+                WiFi.mode(WIFI_OFF);
+                Serial.println("📴 WiFi turned OFF");
+            }
+        }
+            g_wifiButtonState = wifiReading;
+            g_lastWifiButtonChange = now; // 這邊寫死為 now，避免一直觸發
+    }
     
     // 狀態更新（每100ms）
     static uint32_t lastStatus = 0;
     if (millis() - lastStatus > 100) {
-        bool wifiActive = WiFi.softAPgetStationNum() > 0;
+        bool wifiActive = g_wifiArmed && (WiFi.getMode() != WIFI_OFF);
         bool sseActive = g_web.isSSEConnected();
 
         LapInfo lap = trackToLapInfo(track);
