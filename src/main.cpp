@@ -21,6 +21,15 @@ std::vector<Line2D> buildTKS() {
     return sectors;
 }
 
+std::vector<Line2D> buildLC_PARK() {
+    std::vector<Line2D> sectors;
+    sectors.push_back(Line2D(GPSPoint(22.854111, 120.254947, true), 185, 50));
+    sectors.push_back(Line2D(GPSPoint(22.853006, 120.253759, true), 277, 50));
+    sectors.push_back(Line2D(GPSPoint(22.854177, 120.253018, true), 27, 50));
+    sectors.push_back(Line2D(GPSPoint(22.854996, 120.254341, true), 137, 50));
+    return sectors;
+}
+
 // 全域物件
 StorageManager g_storage(STORAGE_FS);
 GpsTimeParser g_timeParser;
@@ -28,7 +37,7 @@ GpsReceiver g_gpsReceiver;
 WebInterface g_web(g_storage);
 DisplayManager g_display;
 StatusLED g_statusLED;
-Track track(buildTKS(), true);
+Track track(buildLC_PARK(), true);
 
 // 狀態變數
 int lineCount = 0;
@@ -39,7 +48,7 @@ bool g_recordButtonState = false;   // 按鈕上一次讀到的狀態
 uint32_t g_lastButtonChange = 0;      // 上一次按鈕狀態變化的時間
 uint8_t g_buttonPin = RECORD_BUTTON_PIN;
 
-bool g_wifiOn = true;                     // 一開始 WiFi 開啟
+bool g_wifiOn = false;                     // 一開始 WiFi 關閉
 bool g_wifiArmed = true;                  // 是否允許使用 WiFi（按鈕控制）
 bool g_wifiButtonState = false;           // WiFi 按鈕上次的狀態
 uint32_t g_lastWifiButtonChange = 0;      // 上次 WiFi 按鈕變化時間
@@ -64,6 +73,8 @@ LapInfo trackToLapInfo(const Track& track) {
         lap.currentLapNum = track.getLaps().size();
         lap.lastLapNum = lap.currentLapNum == 0 ? 0 : lap.currentLapNum;
         lap.totalLaps = track.getLaps().size();
+        lap.distToNextSector = track.getCurrentPos().distanceTo(track.getNextCheckpoint());
+        lap.distToNextSector > 999 ? 999 : lap.distToNextSector;
         
         // Current lap (未完成)
         uint32_t currLapTime = track.getCurrentSectorCount() > 0 ? 
@@ -104,6 +115,7 @@ void setup() {
 
     setupWiFiAP();
     g_web.begin();
+    WiFi.mode(g_wifiOn ? WIFI_AP : WIFI_OFF);
 
     pinMode(g_buttonPin, INPUT_PULLUP);
     g_recordButtonState = digitalRead(g_buttonPin);
@@ -123,6 +135,14 @@ void loop() {
     uint32_t loopStart = millis();
     
     bool gpsSerialActive = g_gpsReceiver.loop();
+    GpsData gps = g_timeParser.currentGps();
+    DateTimeInfo time = g_timeParser.current();
+    if (gpsSerialActive) {
+        if (gps.hasValidFix && gps.hasValidSpeed && g_timeParser.hasValidTime()) {
+            Point2D pos = GPSPoint(g_timeParser.currentGps().latitude, g_timeParser.currentGps().longitude, false);
+            track.updatePos(pos, g_timeParser.currentTimestamp());
+        }
+    }
     
     // Web 服務
     g_web.handleClient();
@@ -186,9 +206,7 @@ void loop() {
         bool sseActive = g_web.isSSEConnected();
 
         LapInfo lap = trackToLapInfo(track);
-        GpsData gps = g_timeParser.currentGps();
         bool gpsFixValid = gps.hasValidFix;
-        DateTimeInfo time = g_timeParser.current();
 
         g_statusLED.update(
             g_storageReady, gpsFixValid, g_recordArmed, g_logFileOpened,

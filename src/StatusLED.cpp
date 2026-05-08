@@ -4,7 +4,7 @@ CRGB StatusLED::leds[NUM_LEDS];
 
 void StatusLED::begin() {
   FastLED.addLeds<WS2812, STATUS_LED_PIN, GRB>(leds, NUM_LEDS);
-  FastLED.setBrightness(50);
+  FastLED.setBrightness(128);
   FastLED.clear();
   FastLED.show();
 }

@@ -5,8 +5,7 @@
 #include "Sector.h"
 #include "Point2D.h"
 #include "Line2D.h"
-
-using TimeMs = uint32_t;
+#include "Config.h"
 
 class Track {
 public:

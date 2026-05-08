@@ -9,11 +9,13 @@ public:
   bool hasValidTime() const;
   DateTimeInfo current() const;
   GpsData currentGps() const { return _gpsData; }
+  TimeMs currentTimestamp() const { return timestamp; }
 
 private:
   DateTimeInfo _current;
   bool _hasValidTime = false;
   GpsData _gpsData;
+  TimeMs timestamp;
 };
 
 #endif

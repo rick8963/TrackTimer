@@ -8,6 +8,8 @@
 #include <FS.h>
 #include <vector>
 
+using TimeMs = uint32_t;
+
 static const int GPS_RX_PIN = 9;
 static const int GPS_TX_PIN = 10;
 static const uint32_t GPS_BAUD_RATE = 115200;
@@ -74,6 +76,7 @@ struct LapInfo {
   int lastLapNum = 0;
   int bestLapNum = 0;
   int totalLaps = 0;
+  int distToNextSector = 0;
 };
 
 #define STORAGE_FS SPIFFS
