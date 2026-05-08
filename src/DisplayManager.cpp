@@ -184,12 +184,13 @@ void DisplayManager::drawTrackMode(const GpsData &gps, const LapInfo &lap) {
     else if (gps.fixType == 3) fixStr = "3D";
     else if (gps.fixType > 0) fixStr = "FX";
 
-    snprintf(buf, sizeof(buf), "SPD%3d SAT%02d %s LAP%d/%d",
+    snprintf(buf, sizeof(buf), "SPD%3d SAT%02d %s LAP%d/%d NSC%d",
          (int)gps.speedKmh,
          gps.satCount,
          fixStr,
          lap.currentLapNum,
-         lap.totalLaps);
+         lap.totalLaps,
+         lap.distToNextSector);
     u8g2.drawStr(2, 63, buf);
 }
 

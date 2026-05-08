@@ -94,9 +94,10 @@ void GpsTimeParser::processLine(const String &line) {
     return;
   }
 
-  int hh = timeStr.substring(0, 2).toInt();
-  int mm = timeStr.substring(2, 4).toInt();
+  uint32_t hh = timeStr.substring(0, 2).toInt();
+  uint32_t mm = timeStr.substring(2, 4).toInt();  
   int ss = timeStr.substring(4, 6).toInt();
+  float ssFloat = timeStr.substring(4).toFloat();
 
   int dd = dateStr.substring(0, 2).toInt();
   int mo = dateStr.substring(2, 4).toInt();
@@ -110,6 +111,8 @@ void GpsTimeParser::processLine(const String &line) {
   if (dd <= 0 || dd > 31 || mo <= 0 || mo > 12) {
     return;
   }
+
+  timestamp = hh*3600000u + mm*60000u + (uint32_t)(ssFloat*1000);
 
   _current.year = fullYear;
   _current.month = mo;
