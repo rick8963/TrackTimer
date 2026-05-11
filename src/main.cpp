@@ -65,32 +65,27 @@ String msToLapTime(TimeMs ms) {
 }
 LapInfo trackToLapInfo(const Track& track) {
     LapInfo lap;
-    if (track.getLaps().empty()) {
-        lap.currentLap = "00:00.0";
-        lap.bestLap = "--:--.-";
-    } else {
-        const auto& latestLap = track.getLaps().back();
-        lap.currentLapNum = track.getLaps().size();
-        lap.lastLapNum = lap.currentLapNum == 0 ? 0 : lap.currentLapNum;
-        lap.totalLaps = track.getLaps().size();
-        lap.distToNextSector = track.getNextCheckpoint().distanceToLine(track.getCurrentPos());
-        lap.distToNextSector > 999 ? 999 : lap.distToNextSector;
-        
-        // Current lap (未完成)
-        uint32_t currLapTime = track.getCurrentSectorCount() > 0 ? 
-            (millis() - track.getSessionStartTime()) : 0;
-        lap.currentLap = msToLapTime(currLapTime);
-        
-        // Best lap
-        lap.bestLap = msToLapTime(track.getBestLapTime());
+    const auto& latestLap = track.getLaps().back();
+    lap.currentLapNum = track.getLaps().size();
+    lap.lastLapNum = lap.currentLapNum == 0 ? 0 : lap.currentLapNum;
+    lap.totalLaps = track.getLaps().size();
+    lap.distToNextSector = track.getNextCheckpoint().distanceToLine(track.getCurrentPos());
+    lap.distToNextSector = lap.distToNextSector < 999 ? lap.distToNextSector : 999;
+    
+    // Current lap (未完成)
+    TimeMs currLapTime = track.getCurrentSectorCount() > 0 ? 
+        (g_timeParser.currentTimestamp() - track.getSessionStartTime()) : 0;
+    lap.currentLap = msToLapTime(currLapTime);
+    
+    // Best lap
+    lap.bestLap = msToLapTime(track.getBestLapTime());
 
-        // Lastest lap
-        lap.lastLap =  msToLapTime(track.getLatestLapTime());
-        
-        // Delta (未完成)
-        lap.deltaStr = "+0.123";
-        lap.deltaSeconds = 0.123f;
-    }
+    // Lastest lap
+    lap.lastLap =  msToLapTime(track.getLatestLapTime());
+    
+    // Delta (未完成)
+    lap.deltaStr = "+0.123";
+    lap.deltaSeconds = 0.123f;
     return lap;
 }
 
@@ -139,7 +134,7 @@ void loop() {
     DateTimeInfo time = g_timeParser.current();
     if (gpsSerialActive) {
         if (gps.hasValidFix && gps.hasValidSpeed && g_timeParser.hasValidTime()) {
-            Point2D pos = GPSPoint(g_timeParser.currentGps().latitude, g_timeParser.currentGps().longitude, false);
+            Point2D pos = GPSPoint(g_timeParser.currentGps().latitude, g_timeParser.currentGps().longitude, true);
             track.updatePos(pos, g_timeParser.currentTimestamp());
         }
     }
@@ -199,31 +194,36 @@ void loop() {
             g_lastWifiButtonChange = now; // 這邊寫死為 now，避免一直觸發
     }
     
+    uint32_t dis_proc_interval;
     // 狀態更新（每100ms）
     static uint32_t lastStatus = 0;
     if (millis() - lastStatus > 100) {
         bool wifiActive = g_wifiArmed && (WiFi.getMode() != WIFI_OFF);
         bool sseActive = g_web.isSSEConnected();
 
-        LapInfo lap = trackToLapInfo(track);
+        
         bool gpsFixValid = gps.hasValidFix;
+        LapInfo lap;
+        if(gpsFixValid) lap = trackToLapInfo(track);
 
         g_statusLED.update(
             g_storageReady, gpsFixValid, g_recordArmed, g_logFileOpened,
             wifiActive, sseActive, false);
-        
+
+        dis_proc_interval = millis();
         g_display.update(
             g_storageReady, gpsSerialActive, g_logFileOpened,
             wifiActive, sseActive,
             time, gps, lap, lineCount
         );
+        dis_proc_interval = millis() - dis_proc_interval;
         
         lastStatus = millis();
     }   
     
     // 避免 WDT
     if (millis() - loopStart > 50) {
-        Serial.printf("⚠️ Loop overrun: %dms\n", millis() - loopStart);
+        Serial.printf("⚠️ Loop overrun: %dms, Display: %dms\n", millis() - loopStart, dis_proc_interval);
     }
 }
 
