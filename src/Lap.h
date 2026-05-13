@@ -22,6 +22,8 @@ public:
     TimeMs getLapTime() const;
     bool hasSectorTime(unsigned int index) const;
     TimeMs getSectorTime(unsigned int index) const;
+    TimeMs getStartTime() const;
+    TimeMs getEndTime() const;
 
 private:
     bool started;

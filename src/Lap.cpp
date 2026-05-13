@@ -74,3 +74,11 @@ TimeMs Lap::getSectorTime(unsigned int index) const {
     if (!sectorTimes[index].valid) return 0;
     return sectorTimes[index].value;
 }
+
+TimeMs Lap::getStartTime() const {
+    return lapStartTime;
+}
+
+TimeMs Lap::getEndTime() const {
+    return lapEndTime;
+}

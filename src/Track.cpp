@@ -37,28 +37,32 @@ Track::Track(std::vector<Line2D> nds, bool isCircuit)
 
 bool Track::passSector(unsigned int i, TimeMs timestamp) {
     if (i >= nodes.size()) return false;
-    
+
     Line2D& sector = nodes[i];
-    
-    // 快速過濾
+
     if (!sector.isPointInInterval(lastPos) && !sector.isPointInInterval(currentPos)) {
         return false;
     }
-    
+
     int64_t cross1 = sector.crossValue(lastPos);
     int64_t cross2 = sector.crossValue(currentPos);
-    
-    // 檢查是否跨線 (符號不同)
+
     if (cross1 * cross2 > 0) {
         return false;
     }
-    
-    if (currentLapIndex < 0) return true;  // 無當前lap
-    
-    TimeMs accurateTime = interpolateCrossingTime(lastPos, currentPos, sector, 
-        lastTimestamp, timestamp, cross1, cross2);
+
+    if (currentLapIndex < 0) {
+        lastCrossingTime = timestamp;
+        return true;
+    }
+
+    TimeMs accurateTime = interpolateCrossingTime(
+        lastPos, currentPos, sector,
+        lastTimestamp, timestamp, cross1, cross2
+    );
+
     lastCrossingTime = accurateTime;
-    
+
     Lap& lap = laps[currentLapIndex];
     lap.setSectorTime(currentSector, accurateTime);
     return true;
@@ -91,6 +95,7 @@ void Track::nextLap(TimeMs timestamp) {
             latestLapTime = lapTime;
             if (lastLapValid && (bestLapTime == 0 || lapTime < bestLapTime)) {
                 bestLapTime = lapTime;
+                bestLapNum = currentLapIndex;
             }
         }
     }
@@ -155,6 +160,7 @@ Line2D Track::getNextCheckpoint() const {
 Point2D Track::getCurrentPos() const { return currentPos; }
 const std::vector<Lap>& Track::getLaps() const { return laps; }
 TimeMs Track::getBestLapTime() const { return bestLapTime; }
+unsigned int Track::getBestLapNum() const { return bestLapNum; }
 TimeMs Track::getLatestLapTime() const { return latestLapTime; }
 TimeMs Track::getSessionStartTime() const { return sessionStartTime; }
 TimeMs Track::getSessionEndTime() const { return sessionEndTime; }
@@ -175,4 +181,14 @@ void Track::removeFirstIncompleteLap() {
     if (currentLapIndex > 0) {
         currentLapIndex--;
     }
+}
+
+bool Track::hasCurrentLap() const {
+    return currentLapIndex >= 0 &&
+           currentLapIndex < static_cast<int>(laps.size());
+}
+
+TimeMs Track::getCurrentLapStartTime() const {
+    if (!hasCurrentLap()) return 0;
+    return laps[currentLapIndex].getStartTime();
 }

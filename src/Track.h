@@ -21,9 +21,12 @@ public:
     const std::vector<Lap>& getLaps() const;
     
     TimeMs getBestLapTime() const;
+    unsigned int getBestLapNum() const;
     TimeMs getLatestLapTime() const;
     TimeMs getSessionStartTime() const;
     TimeMs getSessionEndTime() const;
+    bool hasCurrentLap() const;
+    TimeMs getCurrentLapStartTime() const;
 
 private:
     unsigned int sectorCount;
@@ -54,4 +57,5 @@ private:
     TimeMs latestLapTime;
     TimeMs lastTimestamp;
     TimeMs lastCrossingTime;
+    unsigned int bestLapNum;
 };

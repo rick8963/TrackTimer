@@ -65,25 +65,25 @@ String msToLapTime(TimeMs ms) {
 }
 LapInfo trackToLapInfo(const Track& track) {
     LapInfo lap;
-    const auto& latestLap = track.getLaps().back();
-    lap.currentLapNum = track.getLaps().size();
-    lap.lastLapNum = lap.currentLapNum == 0 ? 0 : lap.currentLapNum;
-    lap.totalLaps = track.getLaps().size();
+
+    const int completedLaps = static_cast<int>(track.getLaps().size());
+
+    lap.totalLaps = completedLaps;
+    lap.lastLapNum = completedLaps;
+    lap.currentLapNum = track.hasCurrentLap() ? completedLaps : 0;
+
     lap.distToNextSector = track.getNextCheckpoint().distanceToLine(track.getCurrentPos());
     lap.distToNextSector = lap.distToNextSector < 999 ? lap.distToNextSector : 999;
-    
-    // Current lap (未完成)
-    TimeMs currLapTime = track.getCurrentSectorCount() > 0 ? 
-        (g_timeParser.currentTimestamp() - track.getSessionStartTime()) : 0;
+
+    TimeMs currLapTime = 0;
+    if (track.hasCurrentLap()) {
+        currLapTime = g_timeParser.currentTimestamp() - track.getCurrentLapStartTime();
+    }
     lap.currentLap = msToLapTime(currLapTime);
-    
-    // Best lap
+
+    lap.lastLap = msToLapTime(track.getLatestLapTime());
     lap.bestLap = msToLapTime(track.getBestLapTime());
 
-    // Lastest lap
-    lap.lastLap =  msToLapTime(track.getLatestLapTime());
-    
-    // Delta (未完成)
     lap.deltaStr = "+0.123";
     lap.deltaSeconds = 0.123f;
     return lap;
