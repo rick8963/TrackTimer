@@ -21,6 +21,13 @@ std::vector<Line2D> buildTKS() {
     return sectors;
 }
 
+std::vector<Line2D> buildARK() {
+    std::vector<Line2D> sectors;
+    sectors.push_back(Line2D(GPSPoint(23.104046, 120.222489, true), 184, 30));
+    sectors.push_back(Line2D(GPSPoint(23.103841, 120.223270, true), 2, 30));
+    return sectors;
+}
+
 std::vector<Line2D> buildLC_PARK() {
     std::vector<Line2D> sectors;
     sectors.push_back(Line2D(GPSPoint(22.854111, 120.254947, true), 185, 50));
@@ -37,7 +44,7 @@ GpsReceiver g_gpsReceiver;
 WebInterface g_web(g_storage);
 DisplayManager g_display;
 StatusLED g_statusLED;
-Track track(buildLC_PARK(), true);
+Track track(buildARK(), true);
 
 // 狀態變數
 int lineCount = 0;
