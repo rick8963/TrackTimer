@@ -23,7 +23,7 @@ std::vector<Line2D> buildTKS() {
 
 std::vector<Line2D> buildARK() {
     std::vector<Line2D> sectors;
-    sectors.push_back(Line2D(GPSPoint(23.104046, 120.222489, true), 184, 30));
+    sectors.push_back(Line2D(GPSPoint(23.104046, 120.222489, true), 184,15));
     sectors.push_back(Line2D(GPSPoint(23.103841, 120.223270, true), 2, 30));
     return sectors;
 }
@@ -76,7 +76,7 @@ LapInfo trackToLapInfo(const Track& track) {
     const int completedLaps = static_cast<int>(track.getLaps().size());
 
     lap.totalLaps = completedLaps;
-    lap.lastLapNum = completedLaps;
+    lap.lastLapNum = track.hasCurrentLap() ? completedLaps - 1 : 0;
     lap.currentLapNum = track.hasCurrentLap() ? completedLaps : 0;
 
     lap.distToNextSector = track.getNextCheckpoint().distanceToLine(track.getCurrentPos());
@@ -90,6 +90,7 @@ LapInfo trackToLapInfo(const Track& track) {
 
     lap.lastLap = msToLapTime(track.getLatestLapTime());
     lap.bestLap = msToLapTime(track.getBestLapTime());
+    lap.bestLapNum = track.getBestLapNum();
 
     lap.deltaStr = "+0.123";
     lap.deltaSeconds = 0.123f;

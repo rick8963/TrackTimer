@@ -24,7 +24,7 @@ static const char *AP_SSID = "ESP32_GPS_LOGGER";
 static const char *AP_PASSWORD = "12345678";
 
 static const char *LOG_FOLDER = "/";
-static const size_t MAX_LOG_FILE_SIZE = 512 * 1024;
+static const size_t MAX_LOG_FILE_SIZE = 13 * 1024 * 1024; // MAX 10MB per file
 
 // === OLED Display (SSD1309 128x64, SPI) ===
 static const int OLED_CS_PIN   = 5;
