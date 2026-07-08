@@ -37,6 +37,23 @@ std::vector<Line2D> buildLC_PARK() {
     return sectors;
 }
 
+std::vector<Line2D> buildLihPaoFull() {
+    std::vector<Line2D> sectors;
+sectors.push_back(Line2D(GPSPoint(24.319902, 120.688045, true), 139, 75));
+
+    // sectors.push_back(Line2D(GPSPoint(24.318767, 120.686510, true), 139, 75));
+    // sectors.push_back(Line2D(GPSPoint(24.317924, 120.682802, true), 283, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.318467, 120.680843, true), 56, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.319502, 120.683055, true), 66, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.320304, 120.685262, true), 72, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.320571, 120.689632, true), 136, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.318296, 120.689681, true), 272, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.318886, 120.688060, true), 86, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.319951, 120.689036, true), 0, 50));
+    // sectors.push_back(Line2D(GPSPoint(24.319841, 120.687904, true), 230, 50));
+    return sectors;
+}
+
 // 全域物件
 StorageManager g_storage(STORAGE_FS);
 GpsTimeParser g_timeParser;
@@ -44,7 +61,7 @@ GpsReceiver g_gpsReceiver;
 WebInterface g_web(g_storage);
 DisplayManager g_display;
 StatusLED g_statusLED;
-Track track(buildARK(), true);
+Track track(buildTKS(), true);
 
 // 狀態變數
 int lineCount = 0;
