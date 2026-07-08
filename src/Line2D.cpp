@@ -56,6 +56,15 @@ uint32_t Line2D::distanceToLineCm(const Point2D& p) const {
 	return static_cast<uint32_t>(absCross / length_cm);
 }
 
+bool Line2D::pathCrossesSegment(const Point2D& prev, const Point2D& curr) const {
+	if (!isPointInInterval(prev) && !isPointInInterval(curr)) {
+		return false;
+	}
+	const int64_t cross1 = crossValue(prev);
+	const int64_t cross2 = crossValue(curr);
+	return cross1 * cross2 <= 0;
+}
+
 bool Line2D::isPointInInterval(const Point2D& p) const {
 	if (lengthSq_cm2 < 1) {
 		return (p.getX() == point1.getX() && p.getY() == point1.getY());

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "Track.h"
+#include "TrackTiming.h"
 #include "GPSPoint.h"
 #include "StorageManager.h"
 #include "GpsTimeParser.h"
@@ -61,7 +61,8 @@ GpsReceiver g_gpsReceiver;
 WebInterface g_web(g_storage);
 DisplayManager g_display;
 StatusLED g_statusLED;
-Track track(buildTKS(), true);
+Track track(buildLC_PARK(), true);
+TrackTimingEngine g_trackTiming(track);
 
 // 狀態變數
 int lineCount = 0;
@@ -79,41 +80,8 @@ uint32_t g_lastWifiButtonChange = 0;      // 上次 WiFi 按鈕變化時間
 uint8_t g_wifiButtonPin = WIFI_BUTTON_PIN;
 
 String msToLapTime(TimeMs ms) {
-    if (ms == 0) return "00:00.0";
-    TimeMs minutes = ms / 60000;
-    TimeMs seconds = (ms % 60000) / 1000;
-    TimeMs millis = ms % 1000 / 10;
-    char buf[9];
-    snprintf(buf, sizeof(buf), "%02u:%02u.%u", minutes, seconds, (unsigned)millis);
-    return String(buf);
+    return TrackTimingEngine::formatLapTime(ms);
 }
-LapInfo trackToLapInfo(const Track& track) {
-    LapInfo lap;
-
-    const int completedLaps = static_cast<int>(track.getLaps().size());
-
-    lap.totalLaps = completedLaps;
-    lap.lastLapNum = track.hasCurrentLap() ? completedLaps - 1 : 0;
-    lap.currentLapNum = track.hasCurrentLap() ? completedLaps : 0;
-
-    lap.distToNextSector = track.getNextCheckpoint().distanceToLine(track.getCurrentPos());
-    lap.distToNextSector = lap.distToNextSector < 999 ? lap.distToNextSector : 999;
-
-    TimeMs currLapTime = 0;
-    if (track.hasCurrentLap()) {
-        currLapTime = g_timeParser.currentTimestamp() - track.getCurrentLapStartTime();
-    }
-    lap.currentLap = msToLapTime(currLapTime);
-
-    lap.lastLap = msToLapTime(track.getLatestLapTime());
-    lap.bestLap = msToLapTime(track.getBestLapTime());
-    lap.bestLapNum = track.getBestLapNum();
-
-    lap.deltaStr = "+0.123";
-    lap.deltaSeconds = 0.123f;
-    return lap;
-}
-
 
 void handleNmeaLine(const String &line);
 void setupWiFiAP();
@@ -160,7 +128,9 @@ void loop() {
     if (gpsSerialActive) {
         if (gps.hasValidFix && gps.hasValidSpeed && g_timeParser.hasValidTime()) {
             Point2D pos = GPSPoint(g_timeParser.currentGps().latitude, g_timeParser.currentGps().longitude, true);
-            track.updatePos(pos, g_timeParser.currentTimestamp());
+            g_trackTiming.feedGpsSample(pos, g_timeParser.currentTimestamp(), true);
+        } else {
+            g_trackTiming.feedGpsSample(Point2D(0, 0), g_timeParser.currentTimestamp(), false);
         }
     }
     
@@ -228,8 +198,8 @@ void loop() {
 
         
         bool gpsFixValid = gps.hasValidFix;
-        LapInfo lap;
-        if(gpsFixValid) lap = trackToLapInfo(track);
+        bool gpsTimingValid = gpsFixValid && gps.hasValidSpeed && g_timeParser.hasValidTime();
+        LapInfo lap = g_trackTiming.getDisplayLapInfo(g_timeParser.currentTimestamp(), gpsTimingValid);
 
         g_statusLED.update(
             g_storageReady, gpsFixValid, g_recordArmed, g_logFileOpened,

@@ -24,6 +24,7 @@ Track::Track(std::vector<Line2D> nds, bool isCircuit)
       latestLapTime(0),
       lastTimestamp(0),
       lastCrossingTime(0),
+      lastLapCompletionTime(0),
       firstLapCompleted(false)
 {
     // 建立 sectors
@@ -40,16 +41,12 @@ bool Track::passSector(unsigned int i, TimeMs timestamp) {
 
     Line2D& sector = nodes[i];
 
-    if (!sector.isPointInInterval(lastPos) && !sector.isPointInInterval(currentPos)) {
+    if (!sector.pathCrossesSegment(lastPos, currentPos)) {
         return false;
     }
 
     int64_t cross1 = sector.crossValue(lastPos);
     int64_t cross2 = sector.crossValue(currentPos);
-
-    if (cross1 * cross2 > 0) {
-        return false;
-    }
 
     if (currentLapIndex < 0) {
         lastCrossingTime = timestamp;
@@ -118,6 +115,19 @@ void Track::updatePos(Point2D& pos, TimeMs timestamp) {
     
     lastPos = currentPos;
     currentPos = pos;
+
+    const bool startFinishCrossing = nodes[0].pathCrossesSegment(lastPos, currentPos);
+    const bool completedFullLap = (currentLapIndex >= 0 && currentSector == sectorCount - 1);
+    if (startFinishCrossing && completedFullLap && lastLapCompletionTime > 0) {
+        const int64_t cross1 = nodes[0].crossValue(lastPos);
+        const int64_t cross2 = nodes[0].crossValue(currentPos);
+        const TimeMs crossingTime = interpolateCrossingTime(
+            lastPos, currentPos, nodes[0], lastTimestamp, timestamp, cross1, cross2);
+        if ((crossingTime - lastLapCompletionTime) < MIN_LAP_INTERVAL_MS) {
+            lastTimestamp = timestamp;
+            return;
+        }
+    }
     
     if (passSector(0, timestamp)) {
         // 起點跨線 = 新圈
@@ -128,6 +138,9 @@ void Track::updatePos(Point2D& pos, TimeMs timestamp) {
         }
         
         lastLapValid = isAllSectorsPassed();
+        if (completedFullLap && lastLapValid) {
+            lastLapCompletionTime = lastCrossingTime;
+        }
         removeFirstIncompleteLap();
         nextLap(lastCrossingTime);
         currentSector = 0;

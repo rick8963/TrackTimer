@@ -28,6 +28,8 @@ public:
     bool hasCurrentLap() const;
     TimeMs getCurrentLapStartTime() const;
 
+    static constexpr TimeMs MIN_LAP_INTERVAL_MS = 5000;
+
 private:
     unsigned int sectorCount;
     unsigned int currentSector;
@@ -57,5 +59,6 @@ private:
     TimeMs latestLapTime;
     TimeMs lastTimestamp;
     TimeMs lastCrossingTime;
+    TimeMs lastLapCompletionTime;
     unsigned int bestLapNum;
 };

@@ -28,6 +28,9 @@ public:
     
     bool isPointInInterval(const Point2D& p) const;
 
+    // Returns true when the path from prev to curr intersects this segment.
+    bool pathCrossesSegment(const Point2D& prev, const Point2D& curr) const;
+
 private:
     Point2D point1;
     Point2D point2;
