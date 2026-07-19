@@ -8,51 +8,15 @@
 #include "DisplayManager.h"
 #include "StatusLED.h"
 #include "Config.h"
+#include "TrackConfig.h"
 
-std::vector<Line2D> buildTKS() {
-    std::vector<Line2D> sectors;
-    sectors.push_back(Line2D(GPSPoint(22.742248, 120.322181, true), 0, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742798, 120.321496, true), 180, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742724, 120.322010, true), 180, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742285, 120.321387, true), 60, 20));
-    sectors.push_back(Line2D(GPSPoint(22.742540, 120.321959, true), 88, 20));
-    sectors.push_back(Line2D(GPSPoint(22.741863, 120.321912, true), 262, 20));
-    sectors.push_back(Line2D(GPSPoint(22.741763, 120.321930, true), 81, 20));
-    return sectors;
-}
 
-std::vector<Line2D> buildARK() {
-    std::vector<Line2D> sectors;
-    sectors.push_back(Line2D(GPSPoint(23.104046, 120.222489, true), 184,15));
-    sectors.push_back(Line2D(GPSPoint(23.103841, 120.223270, true), 2, 30));
-    return sectors;
-}
-
-std::vector<Line2D> buildLC_PARK() {
-    std::vector<Line2D> sectors;
-    sectors.push_back(Line2D(GPSPoint(22.854111, 120.254947, true), 185, 50));
-    sectors.push_back(Line2D(GPSPoint(22.853006, 120.253759, true), 277, 50));
-    sectors.push_back(Line2D(GPSPoint(22.854177, 120.253018, true), 27, 50));
-    sectors.push_back(Line2D(GPSPoint(22.854996, 120.254341, true), 137, 50));
-    return sectors;
-}
-
-std::vector<Line2D> buildLihPaoFull() {
-    std::vector<Line2D> sectors;
-sectors.push_back(Line2D(GPSPoint(24.319902, 120.688045, true), 139, 75));
-
-    // sectors.push_back(Line2D(GPSPoint(24.318767, 120.686510, true), 139, 75));
-    // sectors.push_back(Line2D(GPSPoint(24.317924, 120.682802, true), 283, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.318467, 120.680843, true), 56, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.319502, 120.683055, true), 66, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.320304, 120.685262, true), 72, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.320571, 120.689632, true), 136, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.318296, 120.689681, true), 272, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.318886, 120.688060, true), 86, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.319951, 120.689036, true), 0, 50));
-    // sectors.push_back(Line2D(GPSPoint(24.319841, 120.687904, true), 230, 50));
-    return sectors;
-}
+// not implemented yet
+// void reloadTrackFromStorage() {
+//     g_sectors = loadTrackConfig(g_storage);
+//     track.updateSectors(g_sectors);              // 假設 Track 有這種 API
+//     g_trackTiming.resetWithTrack(track);         // 或重新建構
+// }
 
 // 全域物件
 StorageManager g_storage(STORAGE_FS);
@@ -61,8 +25,9 @@ GpsReceiver g_gpsReceiver;
 WebInterface g_web(g_storage);
 DisplayManager g_display;
 StatusLED g_statusLED;
-Track track(buildLC_PARK(), true);
-TrackTimingEngine g_trackTiming(track);
+TrackConfig g_trackCfg;
+Track g_track(std::vector<Line2D>(), true);
+TrackTimingEngine g_trackTiming(g_track);
 
 // 狀態變數
 int lineCount = 0;
@@ -97,6 +62,10 @@ void setup() {
     } else {
         g_storageReady = g_storage.begin();
     }
+
+    loadTrackConfig(g_storage, g_trackCfg);
+    std::vector<Line2D> nodes = makeTrackNodes(g_trackCfg);
+    g_track = Track(nodes, g_trackCfg.isCircuit);
 
     g_gpsReceiver.begin(GPS_BAUD_RATE);
     g_gpsReceiver.onLine(handleNmeaLine);

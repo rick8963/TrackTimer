@@ -1,6 +1,35 @@
 #include <FS.h>
 #include <SPIFFS.h>
+#include <ArduinoJson.h>
 #include "WebInterface.h"
+#include "Track.h"
+#include "TrackConfig.h"
+
+extern TrackConfig g_trackCfg;
+extern Track g_track;
+
+static bool readFileToString(fs::FS &fs, const char *path, String &out) {
+  File f = fs.open(path, FILE_READ);
+  if (!f || f.isDirectory()) {
+    return false;
+  }
+  out = "";
+  while (f.available()) {
+    out += char(f.read());
+  }
+  f.close();
+  return true;
+}
+
+static bool writeStringToFile(fs::FS &fs, const char *path, const String &data) {
+  File f = fs.open(path, FILE_WRITE);
+  if (!f) {
+    return false;
+  }
+  size_t written = f.print(data);
+  f.close();
+  return written == data.length();
+}
 
 HardwareSerial GPS_SERIAL(1);
 WebServer server(80);
@@ -15,6 +44,9 @@ void WebInterface::begin() {
   server.on("/storage", HTTP_GET, [this]() { handleStorageInfo(); });
   server.on("/delete", HTTP_POST, [this]() { handleDelete(); });
   server.on("/list", HTTP_GET, [this]() { handleFileList(); });
+  server.on("/track", HTTP_GET,  [this]() { handleGetTrack(); });
+  server.on("/track", HTTP_POST, [this]() { handleSetTrack(); });
+  server.on("/track/delete", HTTP_POST, [this]() { handleDeleteSector(); });
   registerExtraRoutes();
   server.begin();
   Serial.println("[Web] HTTP server started on port 80");
@@ -205,6 +237,44 @@ void WebInterface::handleRoot() {
   html += "<button class='btn' onclick='clearBox()' style='background:#666;color:white;'>🗑️ 清除</button>";
   html += "<div id='liveBox'></div>";
 
+  // --- Track configuration UI ---
+  html += "<h2>🏁 賽道設定 (Track)</h2>";
+  html += "<div id='trackBox' style='margin-top:10px;padding:16px;border:1px solid #ddd;background:white;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);'>";
+
+  html += "<div style='margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;'>";
+  html += "<button class='btn' style='background:#1a73e8;color:white;' onclick='loadTrack()'>🔄 載入目前賽道</button>";
+  html += "<span id='trackMeta' style='font-size:14px;color:#666;'>尚未載入賽道設定</span>";
+  html += "</div>";
+
+  // sectors table
+  html += "<table style='width:100%;border-collapse:collapse;margin-top:10px;'>";
+  html += "<thead><tr>";
+  html += "<th style='border-bottom:1px solid #eee;padding:8px;'>#</th>";
+  html += "<th style='border-bottom:1px solid #eee;padding:8px;'>Lat</th>";
+  html += "<th style='border-bottom:1px solid #eee;padding:8px;'>Lon</th>";
+  html += "<th style='border-bottom:1px solid #eee;padding:8px;'>Heading</th>";
+  html += "<th style='border-bottom:1px solid #eee;padding:8px;'>Width</th>";
+  html += "<th style='border-bottom:1px solid #eee;padding:8px;'>操作</th>";
+  html += "</tr></thead>";
+  html += "<tbody id='sectorTable'></tbody>";
+  html += "</table>";
+
+  // editor form
+  html += "<h3 style='margin-top:16px;'>✏️ 新增 / 修改分段</h3>";
+  html += "<div style='display:flex;flex-wrap:wrap;gap:8px;font-size:14px;'>";
+  html += "<label>Index <input id='secIndex' type='number' min='0' style='width:60px;'></label>";
+  html += "<label>Lat <input id='secLat' type='text' style='width:120px;'></label>";
+  html += "<label>Lon <input id='secLon' type='text' style='width:120px;'></label>";
+  html += "<label>Heading <input id='secHeading' type='number' step='0.1' style='width:80px;'></label>";
+  html += "<label>Width <input id='secWidth' type='number' step='0.1' style='width:80px;'></label>";
+  html += "</div>";
+  html += "<div style='margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;'>";
+  html += "<button class='btn' style='background:#34a853;color:white;' onclick='applySector()'>💾 套用到賽道</button>";
+  html += "<button class='btn' style='background:#666;color:white;' onclick='clearSectorForm()'>🧹 清除表單</button>";
+  html += "</div>";
+
+  html += "</div>"; // trackBox
+
 html += R"(
 <script>
 let es = null;
@@ -273,6 +343,177 @@ function confirmDelete(filename) {
     })
     .catch(err => alert('刪除失敗: ' + err));
   }
+}
+// === Track configuration JS ===
+let currentTrack = null;
+
+function loadTrack() {
+  fetch('/track')
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      currentTrack = data;
+      renderTrack(data);
+    })
+    .catch(err => {
+      alert('載入賽道失敗: ' + err);
+    });
+}
+
+function renderTrack(cfg) {
+  const meta = document.getElementById('trackMeta');
+  const tbody = document.getElementById('sectorTable');
+
+  meta.textContent = `名稱: ${cfg.name || '未命名'} | isCircuit: ${cfg.isCircuit ? 'true' : 'false'} | sectors: ${cfg.sectors.length}`;
+  tbody.innerHTML = '';
+
+  cfg.sectors.forEach((s, i) => {
+    const tr = document.createElement('tr');
+
+    const tdIdx = document.createElement('td');
+    tdIdx.style.padding = '8px';
+    tdIdx.textContent = i;
+
+    const tdLat = document.createElement('td');
+    tdLat.style.padding = '8px';
+    tdLat.textContent = s.lat.toFixed ? s.lat.toFixed(6) : s.lat;
+
+    const tdLon = document.createElement('td');
+    tdLon.style.padding = '8px';
+    tdLon.textContent = s.lon.toFixed ? s.lon.toFixed(6) : s.lon;
+
+    const tdHead = document.createElement('td');
+    tdHead.style.padding = '8px';
+    tdHead.textContent = s.heading;
+
+    const tdWidth = document.createElement('td');
+    tdWidth.style.padding = '8px';
+    tdWidth.textContent = s.width;
+
+    const tdOps = document.createElement('td');
+    tdOps.style.padding = '8px';
+
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'btn';
+    btnEdit.style.background = '#fbbc05';
+    btnEdit.style.color = 'white';
+    btnEdit.textContent = '編輯';
+    btnEdit.onclick = () => fillSectorForm(i, s);
+
+    const btnDelete = document.createElement('button');
+    btnDelete.className = 'btn btn-delete';
+    btnDelete.style.marginLeft = '6px';
+    btnDelete.textContent = '刪除';
+    btnDelete.onclick = () => deleteSector(i);
+
+    tdOps.appendChild(btnEdit);
+    tdOps.appendChild(btnDelete);
+
+    tr.appendChild(tdIdx);
+    tr.appendChild(tdLat);
+    tr.appendChild(tdLon);
+    tr.appendChild(tdHead);
+    tr.appendChild(tdWidth);
+    tr.appendChild(tdOps);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function fillSectorForm(idx, s) {
+  document.getElementById('secIndex').value = idx;
+  document.getElementById('secLat').value = s.lat;
+  document.getElementById('secLon').value = s.lon;
+  document.getElementById('secHeading').value = s.heading;
+  document.getElementById('secWidth').value = s.width;
+}
+
+function clearSectorForm() {
+  document.getElementById('secIndex').value = '';
+  document.getElementById('secLat').value = '';
+  document.getElementById('secLon').value = '';
+  document.getElementById('secHeading').value = '';
+  document.getElementById('secWidth').value = '';
+}
+
+function applySector() {
+  if (!currentTrack) {
+    alert('請先按「載入目前賽道」。');
+    return;
+  }
+
+  const idxStr = document.getElementById('secIndex').value;
+  const latStr = document.getElementById('secLat').value;
+  const lonStr = document.getElementById('secLon').value;
+  const headingStr = document.getElementById('secHeading').value;
+  const widthStr = document.getElementById('secWidth').value;
+
+  if (!latStr || !lonStr || !headingStr || !widthStr) {
+    alert('Lat/Lon/Heading/Width 不可空白。');
+    return;
+  }
+
+  const lat = parseFloat(latStr);
+  const lon = parseFloat(lonStr);
+  const heading = parseFloat(headingStr);
+  const width = parseFloat(widthStr);
+
+  if (isNaN(lat) || isNaN(lon) || isNaN(heading) || isNaN(width)) {
+    alert('請輸入合法的數值。');
+    return;
+  }
+
+  const sector = { lat, lon, heading, width };
+
+  let idx = -1;
+  if (idxStr !== '') {
+    idx = parseInt(idxStr, 10);
+    if (idx < 0 || idx >= currentTrack.sectors.length) {
+      alert('Index 超出範圍，將新增到末尾。');
+      idx = -1;
+    }
+  }
+
+  if (idx === -1) {
+    // 新增
+    currentTrack.sectors.push(sector);
+  } else {
+    // 修改
+    currentTrack.sectors[idx] = sector;
+  }
+
+  // 把整個 track config 回傳給 /track
+  fetch('/track', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(currentTrack)
+  })
+  .then(r => r.text())
+  .then(msg => {
+    alert(msg);
+    // 重新載入一次，確保資料與 Track 同步
+    loadTrack();
+    clearSectorForm();
+  })
+  .catch(err => alert('更新賽道失敗: ' + err));
+}
+
+function deleteSector(idx) {
+  if (!confirm('確定刪除第 ' + idx + ' 個分段嗎？')) return;
+
+  fetch('/track/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'index=' + encodeURIComponent(idx)
+  })
+  .then(r => r.text())
+  .then(msg => {
+    alert(msg);
+    loadTrack();
+  })
+  .catch(err => alert('刪除失敗: ' + err));
 }
 </script>
 )";
@@ -364,4 +605,113 @@ void WebInterface::handleFileList() {
   }
   json += "]";
   server.send(200, "application/json", json);
+}
+
+void WebInterface::handleGetTrack() {
+  // 先用 TrackConfig API 讀取設定（如果檔案不存在會生成預設 TKS）
+  if (!loadTrackConfig(_storage, g_trackCfg)) {
+    server.send(500, "text/plain", "Failed to load track config");
+    return;
+  }
+
+  // 把 g_trackCfg 組成 JSON 回傳給前端
+  StaticJsonDocument<2048> doc;
+  doc["version"] = 1;
+  doc["name"] = g_trackCfg.name;
+  doc["isCircuit"] = g_trackCfg.isCircuit;
+
+  JsonArray arr = doc.createNestedArray("sectors");
+  for (const auto &s : g_trackCfg.sectors) {
+    JsonObject o = arr.createNestedObject();
+    o["lat"] = s.lat;
+    o["lon"] = s.lon;
+    o["heading"] = s.heading;
+    o["width"] = s.width;
+  }
+
+  String out;
+  serializeJson(doc, out);
+
+  server.send(200, "application/json; charset=utf-8", out);
+}
+
+void WebInterface::handleSetTrack() {
+  if (!server.hasArg("plain")) {
+    server.send(400, "text/plain", "No JSON body");
+    return;
+  }
+
+  String body = server.arg("plain");
+
+  // 解析前端送來的 JSON 到 TrackConfig
+  StaticJsonDocument<2048> doc;
+  DeserializationError err = deserializeJson(doc, body);
+  if (err) {
+    Serial.printf("[Web] Track JSON parse error: %s\n", err.c_str());
+    server.send(400, "text/plain", "Invalid JSON");
+    return;
+  }
+
+  TrackConfig cfg;
+
+  cfg.name = doc["name"] | String("Track");
+  cfg.isCircuit = doc["isCircuit"] | true;
+
+  cfg.sectors.clear();
+  JsonArray arr = doc["sectors"].as<JsonArray>();
+  for (JsonVariant v : arr) {
+    SectorConfig s{};
+    s.lat     = v["lat"]     | 0.0;
+    s.lon     = v["lon"]     | 0.0;
+    s.heading = v["heading"] | 0.0f;
+    s.width   = v["width"]   | 20.0f;
+    cfg.sectors.push_back(s);
+  }
+
+  // 寫回 /track.json
+  if (!saveTrackConfig(_storage, cfg)) {
+    server.send(500, "text/plain", "Failed to save track config");
+    return;
+  }
+
+  // 更新全域 TrackConfig 和 Track（讓新設定立即生效）
+  g_trackCfg = cfg;
+  std::vector<Line2D> nodes = makeTrackNodes(g_trackCfg);
+  g_track = Track(nodes, g_trackCfg.isCircuit);
+
+  server.send(200, "text/plain", "Track updated");
+}
+
+void WebInterface::handleDeleteSector() {
+  if (!server.hasArg("index")) {
+    server.send(400, "text/plain", "Missing index");
+    return;
+  }
+  int idx = server.arg("index").toInt();
+
+  // 先載入目前設定到 g_trackCfg
+  if (!loadTrackConfig(_storage, g_trackCfg)) {
+    server.send(500, "text/plain", "Failed to load track config");
+    return;
+  }
+
+  if (idx < 0 || idx >= (int)g_trackCfg.sectors.size()) {
+    server.send(400, "text/plain", "Index out of range");
+    return;
+  }
+
+  // 刪除指定的 sector
+  g_trackCfg.sectors.erase(g_trackCfg.sectors.begin() + idx);
+
+  // 寫回 /track.json
+  if (!saveTrackConfig(_storage, g_trackCfg)) {
+    server.send(500, "text/plain", "Failed to save track config");
+    return;
+  }
+
+  // 重建 Track 讓新設定生效
+  std::vector<Line2D> nodes = makeTrackNodes(g_trackCfg);
+  g_track = Track(nodes, g_trackCfg.isCircuit);
+
+  server.send(200, "text/plain", "Sector deleted");
 }
