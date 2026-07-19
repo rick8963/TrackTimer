@@ -27,6 +27,10 @@ private:
   void registerExtraRoutes();
   void handleStorageInfo();
   void handleFileList();
+  
+  void handleGetTrack();           // GET /track
+  void handleSetTrack();           // POST /track
+  void handleDeleteSector();       // POST /track/delete
 
   StorageManager &_storage;
 

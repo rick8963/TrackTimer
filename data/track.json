@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "User-defined",
+  "isCircuit": true,
+  "nodes": [
+    { "lat": 22.742248, "lon": 120.322181, "heading": 0,   "width": 20 },
+    { "lat": 22.742798, "lon": 120.321496, "heading": 180, "width": 20 },
+    { "lat": 22.742724, "lon": 120.322010, "heading": 180, "width": 20 },
+    { "lat": 22.742285, "lon": 120.321387, "heading": 60,  "width": 20 },
+    { "lat": 22.742540, "lon": 120.321959, "heading": 88,  "width": 20 },
+    { "lat": 22.741863, "lon": 120.321912, "heading": 262, "width": 20 },
+    { "lat": 22.741763, "lon": 120.321930, "heading": 81,  "width": 20 }
+  ]
+}
