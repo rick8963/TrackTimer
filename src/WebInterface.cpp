@@ -615,7 +615,7 @@ void WebInterface::handleGetTrack() {
   }
 
   // 把 g_trackCfg 組成 JSON 回傳給前端
-  StaticJsonDocument<2048> doc;
+  JsonDocument doc;
   doc["version"] = 1;
   doc["name"] = g_trackCfg.name;
   doc["isCircuit"] = g_trackCfg.isCircuit;
@@ -644,7 +644,7 @@ void WebInterface::handleSetTrack() {
   String body = server.arg("plain");
 
   // 解析前端送來的 JSON 到 TrackConfig
-  StaticJsonDocument<2048> doc;
+  JsonDocument doc;
   DeserializationError err = deserializeJson(doc, body);
   if (err) {
     Serial.printf("[Web] Track JSON parse error: %s\n", err.c_str());

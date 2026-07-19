@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "name": "TKS",
+  "name": "User-defined",
   "isCircuit": true,
   "nodes": [
     { "lat": 22.742248, "lon": 120.322181, "heading": 0,   "width": 20 },

@@ -10,14 +10,6 @@
 #include "Config.h"
 #include "TrackConfig.h"
 
-
-// not implemented yet
-// void reloadTrackFromStorage() {
-//     g_sectors = loadTrackConfig(g_storage);
-//     track.updateSectors(g_sectors);              // 假設 Track 有這種 API
-//     g_trackTiming.resetWithTrack(track);         // 或重新建構
-// }
-
 // 全域物件
 StorageManager g_storage(STORAGE_FS);
 GpsTimeParser g_timeParser;
@@ -26,7 +18,7 @@ WebInterface g_web(g_storage);
 DisplayManager g_display;
 StatusLED g_statusLED;
 TrackConfig g_trackCfg;
-Track g_track(std::vector<Line2D>(), true);
+Track g_track(std::vector<Line2D>{Line2D(Point2D(0,0), 0, 10)}, true);
 TrackTimingEngine g_trackTiming(g_track);
 
 // 狀態變數
@@ -55,7 +47,7 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
     Serial.println("\n=== ESP32 GPS NMEA Logger ===");
-
+    
     if (!STORAGE_FS.begin(true)) {
         Serial.println("[Storage] SPIFFS mount failed");
         g_storageReady = false;

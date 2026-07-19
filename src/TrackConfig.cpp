@@ -6,7 +6,7 @@ static const char *TRACK_CONFIG_PATH = "/track.json";
 // -----------------------------------------------------------------------------
 // 共用 JSON <-> SPIFFS 工具
 // -----------------------------------------------------------------------------
-static bool readJsonFromFile(fs::FS &fs, const char *path, StaticJsonDocument<2048> &doc) {
+static bool readJsonFromFile(fs::FS &fs, const char *path, JsonDocument &doc) {
     File f = fs.open(path, FILE_READ);
     if (!f || f.isDirectory()) {
         Serial.println("[TrackConfig] Config file not found or is a directory");
@@ -23,7 +23,7 @@ static bool readJsonFromFile(fs::FS &fs, const char *path, StaticJsonDocument<20
     return true;
 }
 
-static bool writeJsonToFile(fs::FS &fs, const char *path, const StaticJsonDocument<2048> &doc) {
+static bool writeJsonToFile(fs::FS &fs, const char *path, const JsonDocument &doc) {
     File f = fs.open(path, FILE_WRITE);
     if (!f) {
         Serial.println("[TrackConfig] Failed to open config file for writing");
@@ -63,7 +63,7 @@ static void fillDefaultTKS(TrackConfig &cfg) {
 // -----------------------------------------------------------------------------
 bool saveTrackConfig(StorageManager &storage, const TrackConfig &cfg) {
     fs::FS &fs = storage.fs();
-    StaticJsonDocument<2048> doc;
+    JsonDocument doc;
 
     doc["version"] = 1;
     doc["name"] = cfg.name;
@@ -95,7 +95,7 @@ bool saveTrackConfig(StorageManager &storage, const TrackConfig &cfg) {
 // -----------------------------------------------------------------------------
 bool loadTrackConfig(StorageManager &storage, TrackConfig &cfg) {
     fs::FS &fs = storage.fs();
-    StaticJsonDocument<2048> doc;
+    JsonDocument doc;
 
     // 試著讀取既有 track.json
     if (!readJsonFromFile(fs, TRACK_CONFIG_PATH, doc)) {
